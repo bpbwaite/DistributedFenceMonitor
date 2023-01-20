@@ -8,29 +8,43 @@
 */
 #include <dfm_nanorp2040.h>
 
+#ifdef BUILD_NANORP2040
+
 #include <Arduino.h>
 #include <Arduino_LSM6DSOX.h>
 #include <WiFiNINA.h>
 
 void setup_nanorp2040() {
-    pinMode(LEDR, OUTPUT);
-    pinMode(LEDG, OUTPUT);
-    pinMode(LEDB, OUTPUT);
-    digitalWrite(LEDR, LOW);
-    digitalWrite(LEDG, LOW);
-    digitalWrite(LEDB, LOW);
+    Serial.begin(9600);
+    while (!Serial)
+        ;
+
+    if (!IMU.begin()) {
+        Serial.println("Failed to initialize IMU!");
+
+        while (1)
+            ;
+    }
+
+    Serial.print("Accelerometer sample rate = ");
+    Serial.print(IMU.accelerationSampleRate());
+    Serial.println(" Hz");
+    Serial.println();
+    Serial.println("Acceleration in g's");
+    Serial.println("X\tY\tZ");
 }
 void loop_nanorp2040() {
-    digitalWrite(LEDR, HIGH);
-    delay(100);
-    digitalWrite(LEDR, LOW);
-    delay(100);
-    digitalWrite(LEDG, HIGH);
-    delay(100);
-    digitalWrite(LEDG, LOW);
-    delay(100);
-    digitalWrite(LEDB, HIGH);
-    delay(100);
-    digitalWrite(LEDB, LOW);
-    delay(100);
+    float x, y, z;
+
+    if (IMU.accelerationAvailable()) {
+        IMU.readAcceleration(x, y, z);
+
+        Serial.print(x);
+        Serial.print('\t');
+        Serial.print(y);
+        Serial.print('\t');
+        Serial.println(z);
+    }
 }
+
+#endif

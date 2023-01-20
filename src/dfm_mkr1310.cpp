@@ -8,16 +8,41 @@
 */
 #include <dfm_mkr1310.h>
 
+#ifdef BUILD_MKR1310
+
 #include <Arduino.h>
 #include <SPI.h>
 #include <LoRa.h>
 
+#define SERIALBAUD    115200
+#define LORA_AMERICAN 915E6
+#define LORA_AFRICAN  868E6
+
+int counter = 0;
+
 void setup_mkr1310() {
-    pinMode(LED_BUILTIN, OUTPUT);
+#ifdef DEBUG
+    Serial.begin(SERIALBAUD);
+    while (!Serial)
+        ;
+#endif
+
+    if (!LoRa.begin(LORA_AMERICAN)) {
+        Serial.println("LoRa Module Failure");
+    }
+    else {
+        Serial.println("LoRa Module Online");
+    }
 }
 void loop_mkr1310() {
-    digitalWrite(LED_BUILTIN, HIGH);
-    delay(500);
-    digitalWrite(LED_BUILTIN, LOW);
-    delay(500);
+    LoRa.beginPacket();
+    LoRa.print("hello ");
+    LoRa.print(counter);
+    LoRa.endPacket();
+
+    counter++;
+
+    delay(5000);
 }
+
+#endif
