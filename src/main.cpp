@@ -1,3 +1,12 @@
+/*
+  FILE: MAIN.CPP
+  VERSION: 0.5.0
+  DATE: 19 January 2023
+  PROJECT: Distributed Fence Monitor Capstone
+  AUTHORS: Briellyn Braithwaite
+  DESCRIPTION:
+*/
+
 #include <Arduino.h>
 
 #include <dfm_mkr1310.h>
