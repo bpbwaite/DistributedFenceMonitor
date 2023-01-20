@@ -1,0 +1,6 @@
+# Dependencies & Requirements to get started
+
+- ensure you've installed "Arduino SAMD boards" in Arduino IDE 2.0
+- you need the Arduino SAMD Core
+- ensure you've installed the mbed Nano RP2040Connect boards and their drivers
+- open the project in VSCode with the PlatformIO extension installed
