@@ -17,38 +17,31 @@
 
 #define SERIALBAUD 115200
 
-#define LORA_AMERICAN 915E6
-#define LORA_AFRICAN  868E6
-#define LORA_EUROPEAN 433E6
+#define LORA_AMERICA 915E6
+#define LORA_AFRICA  868E6
+#define LORA_EUROPE  433E6
 
 int counter = 0;
 
 void setup_mkr1310() {
+
 #ifdef DEBUG
     Serial.begin(SERIALBAUD);
     while (!Serial)
         ;
 #endif
 
-    if (!LoRa.begin(LORA_AMERICAN)) {
+    if (!LoRa.begin(LORA_AMERICA)) {
         Serial.println("LoRa Module Failure");
     }
     else {
         Serial.println("LoRa Module Online");
     }
 
-    LoRa.setGain(5);            // range 0-6
-    LoRa.setSpreadingFactor(7); // ranges from 6-12,default 7, sender/receiver must match
-}
-void loop_mkr1310() {
-    LoRa.beginPacket();
-    LoRa.print("hello ");
-    LoRa.print(counter);
-    LoRa.endPacket();
 
-    counter++;
-
-    delay(5000);
+    LoRa.setGain(5);             // range 0-6
+    LoRa.setSpreadingFactor(12); // ranges from 6-12,default 7, sender/receiver must match
 }
+void loop_mkr1310() {}
 
 #endif
