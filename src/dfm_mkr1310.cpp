@@ -11,6 +11,7 @@
 #ifdef BUILD_MKR1310
 
 #include <Arduino.h>
+#include <ArduinoLowPower.h>
 #include <ArduinoECCX08.h>
 #include <LoRa.h>
 #include <SPI.h>
@@ -37,7 +38,6 @@ void setup_mkr1310() {
     else {
         Serial.println("LoRa Module Online");
     }
-
 
     LoRa.setGain(5);             // range 0-6
     LoRa.setSpreadingFactor(12); // ranges from 6-12,default 7, sender/receiver must match
