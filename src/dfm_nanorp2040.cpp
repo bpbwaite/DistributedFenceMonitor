@@ -3,7 +3,7 @@
   VERSION: 0.0.2
   DATE: 20 January 2023
   PROJECT: Distributed Fence Monitor Capstone
-  AUTHORS: Briellyn Braithwaite
+  AUTHORS: Briellyn Braithwaite, Jack Ramsay
   DESCRIPTION: Minimal test code for RP2040Connect
 */
 #include <dfm_nanorp2040.h>
