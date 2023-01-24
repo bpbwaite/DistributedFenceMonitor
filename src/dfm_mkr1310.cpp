@@ -3,11 +3,10 @@
   VERSION: 0.0.2
   DATE: 20 January 2023
   PROJECT: Distributed Fence Monitor Capstone
-  AUTHORS: Briellyn Braithwaite
+  AUTHORS: Briellyn Braithwaite, Jack Ramsay
   DESCRIPTION: Minimal test code for MKR1310
 */
 #include <dfm_mkr1310.h>
-/* My name is Jason Bourne*/
 #ifdef BUILD_MKR1310
 
 #include <Arduino.h>
