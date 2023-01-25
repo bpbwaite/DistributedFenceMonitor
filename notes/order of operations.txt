@@ -5,23 +5,23 @@ This note will help explain the Arduino execution sequence
 - main():
     - init() and initVariant() [exact content varies by board]
         - enable interrupts
-            - sets up a Timer
-            - configure interrupt vector
+            - sets up necessary Timers
+            - configure Interrupt Vector
         - configure Timer prescalars
         - configure ADC frequency prescalars
         - enable serial connection pins
     - USB Device attachment
     - call setup()
         - if using MKR1310,
-            - setup_mkr1310()           ****
+            - setup_mkr1310()                   ****
         - if using RP2040Connect,
-            - setup_nanorp2040()        ****
+            - setup_nanorp2040()                ****
     - while true:
         - call loop()
             - if using MKR1310,
-                - loop_mkr1310()        ****
+                - loop_mkr1310()                ****
             - if using RP2040Connect,
-                - loop_nanorp2040()     ****
+                - loop_nanorp2040()             ****
         - Hardware Serial Interrupt [unused]
 
-**** = in the scope of our project
+**** -> in the scope of our project
