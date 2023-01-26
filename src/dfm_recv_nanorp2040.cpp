@@ -4,11 +4,10 @@
   DATE: 25 January 2023
   PROJECT: Distributed Fence Monitor Capstone
   AUTHORS: Briellyn Braithwaite
-  DESCRIPTION:
+  DESCRIPTION: NanoRP2040 Central Node Code
 */
-#include <dfm_recv_nanorp2040.h>
-
-#ifdef BUILD_RECV_NANORP2040
+#include <dfm_nanorp2040.h>
+#if defined(ARDUINO_NANO_RP2040_CONNECT) & defined(CENTRAL_NODE)
 
 #include <Arduino.h>
 #include <WiFiNINA.h>

@@ -4,10 +4,10 @@
   DATE: 25 January 2023
   PROJECT: Distributed Fence Monitor Capstone
   AUTHORS: Briellyn Braithwaite
-  DESCRIPTION:
+  DESCRIPTION: MKR1310 Central Node Code
 */
-#include <dfm_recv_mkr1310.h>
-#ifdef BUILD_RECV_MKR1310
+#include <dfm_mkr1310.h>
+#if defined(ARDUINO_SAMD_MKRWAN1310) & defined(CENTRAL_NODE)
 
 #include <Arduino.h>
 #include <ArduinoECCX08.h>

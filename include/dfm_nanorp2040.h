@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef BUILD_NANORP2040
+#ifdef ARDUINO_NANO_RP2040_CONNECT
 void setup_nanorp2040();
 void loop_nanorp2040();
 #endif

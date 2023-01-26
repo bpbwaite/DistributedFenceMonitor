@@ -10,38 +10,38 @@
 #include <Arduino.h>
 
 #include <dfm_mkr1310.h>
-#include <dfm_recv_mkr1310.h>
 #include <dfm_nanorp2040.h>
-#include <dfm_recv_nanorp2040.h>
 
 void setup() {
     // put your setup code here, to run once:
-#ifdef BUILD_MKR1310
+#if defined(ARDUINO_SAMD_MKRWAN1310)
+#if defined(CENTRAL_NODE)
+    setup_recv_mkr1310();
+#else
     setup_mkr1310();
 #endif
-#ifdef BUILD_RECV_MKR1310
-    setup_recv_mkr1310();
-#endif
-#ifdef BUILD_NANORP2040
+#elif defined(ARDUINO_NANO_RP2040_CONNECT)
+#if defined(CENTRAL_NODE)
+    setup_recv_nanorp2040();
+#else
     setup_nanorp2040();
 #endif
-#ifdef BUILD_RECV_NANORP2040
-    setup_recv_nanorp2040();
 #endif
 }
 
 void loop() {
     // put your main code here, to run repeatedly:
-#ifdef BUILD_MKR1310
+#if defined(ARDUINO_SAMD_MKRWAN1310)
+#if defined(CENTRAL_NODE)
+    loop_recv_mkr1310();
+#else
     loop_mkr1310();
 #endif
-#ifdef BUILD_RECV_MKR1310
-    loop_recv_mkr1310();
-#endif
-#ifdef BUILD_NANORP2040
+#elif defined(ARDUINO_NANO_RP2040_CONNECT)
+#if defined(CENTRAL_NODE)
+    loop_recv_nanorp2040();
+#else
     loop_nanorp2040();
 #endif
-#ifdef BUILD_RECV_NANORP2040
-    loop_recv_nanorp2040();
 #endif
 }
