@@ -1,7 +1,7 @@
 /*
   FILE: MAIN.CPP
-  VERSION: 0.5.0
-  DATE: 19 January 2023
+  VERSION: 0.9.0
+  DATE: 25 January 2023
   PROJECT: Distributed Fence Monitor Capstone
   AUTHORS: Briellyn Braithwaite
   DESCRIPTION:

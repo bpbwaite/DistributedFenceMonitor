@@ -1,6 +1,6 @@
 /*
   FILE: DFM_RECV_NANORP2040.CPP
-  VERSION: 0.0.1
+  VERSION: 0.0.2
   DATE: 25 January 2023
   PROJECT: Distributed Fence Monitor Capstone
   AUTHORS: Briellyn Braithwaite

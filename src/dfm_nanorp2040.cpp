@@ -1,7 +1,7 @@
 /*
   FILE: DFM_NANORP2040.CPP
   VERSION: 0.0.2
-  DATE: 24 January 2023
+  DATE: 25 January 2023
   PROJECT: Distributed Fence Monitor Capstone
   AUTHORS: Briellyn Braithwaite, Jack Ramsay
   DESCRIPTION: Minimal test code for RP2040Connect
