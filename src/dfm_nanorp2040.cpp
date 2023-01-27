@@ -13,7 +13,7 @@
 #include <Arduino_LSM6DSOX.h>
 #include <WiFiNINA.h>
 
-#define SERIALBAUD 115200
+
 
 void setup_nanorp2040() {
 

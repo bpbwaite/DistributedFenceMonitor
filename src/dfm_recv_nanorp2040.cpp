@@ -12,8 +12,6 @@
 #include <Arduino.h>
 #include <WiFiNINA.h>
 
-#define SERIALBAUD 115200
-
 void setup_recv_nanorp2040() {
 
 #ifdef DEBUG
