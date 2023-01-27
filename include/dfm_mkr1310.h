@@ -2,12 +2,14 @@
 
 #ifdef ARDUINO_SAMD_MKRWAN1310
 
+#include <Arduino.h>
+
 #define SERIALBAUD   115200
 #define LORA_AMERICA 915E6
 #define LORA_AFRICA  868E6
 #define LORA_EUROPE  433E6
 
-typedef struct MonitoringNodeData {
+typedef struct {
     uint16_t myID;
     uint32_t packetnumber;
     byte status;
@@ -18,7 +20,7 @@ typedef struct MonitoringNodeData {
     byte SFSyncword;
     uint32_t upTime;
     byte temperature;
-};
+} MonitoringNodeData;
 
 void setup_mkr1310();
 void loop_mkr1310();
