@@ -1,5 +1,0 @@
-# Library Name
-
-Description.
-
-# License
