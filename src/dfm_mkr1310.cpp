@@ -16,7 +16,7 @@
 #include <RTCZero.h>
 #include <SPI.h>
 
-// only compiler defines that vary from board to board
+// only defines unique to nodes that vary from board to board
 
 #define MY_IDENTIFIER 0xA1
 // #define SET_RTC
@@ -37,7 +37,7 @@ void setup_mkr1310() {
 #ifdef DEBUG
     Serial.begin(SERIALBAUD);
     while (!Serial)
-        ;
+        yield();
     Serial.println("Serial Interface Connected!");
 #endif
 
@@ -54,13 +54,16 @@ void setup_mkr1310() {
         Serial.println("LoRa Module Online");
     }
 
-    // LoRa.setGain(0); // Range 1-6. 0 is automatic. Applies to receiver only
     LoRa.setSpreadingFactor(SPREADFACTOR);
     LoRa.setSignalBandwidth(SIGNALBANDWIDTH);
     LoRa.setSyncWord(SYNCWORD);
     LoRa.setPreambleLength(PREAMBLELEN);
-    LoRa.enableCrc(); // must match receiver
     // LoRa.setTxPower(17, PA_OUTPUT_PA_BOOST_PIN); // not well documented
+#if defined(USING_CRC)
+    LoRa.enableCrc();
+#else
+    LoRa.disableCrc();
+#endif
 
     mnd.ID             = MY_IDENTIFIER;
     mnd.freq           = SIGNALBANDWIDTH;
@@ -72,17 +75,29 @@ void setup_mkr1310() {
 }
 void loop_mkr1310() {
 
-    mnd.status = 0x1; // temp value
+    mnd.status = 0b00000000;
+    // all possible status bitshifts TODO
+    // mnd.status |= 0b1 << 0;
+    // mnd.status |= 0b1 << 1;
+    // mnd.status |= 0b1 << 2;
+    // mnd.status |= 0b1 << 3;
+    // mnd.status |= 0b1 << 4;
+    // mnd.status |= 0b1 << 5;
+    // mnd.status |= 0b1 << 6;
+    // mnd.status |= 0b1 << 7;
+
     mnd.upTime = millis();
     mnd.epoch  = rtc.getEpoch();
 
-    unsigned long tst = millis(); // TimeSTart
     LoRa.beginPacket();
     mnd.packetnum += 1;
     LoRa.write((uint8_t *) &mnd, sizeof(MonitoringNodeData));
+    unsigned long tst = millis(); // TimeSTart
     LoRa.endPacket();
     mnd.timeInTransit += (millis() - tst);
-    // LoRa.sleep();
+
+    LoRa.sleep();
+    delay(1000);
 }
 
 #endif
