@@ -1,10 +1,10 @@
 /*
   FILE: DFM_MKR1310.H
-  VERSION: 0.0.5
-  DATE: 27 January 2023
+  VERSION: 0.0.6
+  DATE: 28 January 2023
   PROJECT: Distributed Fence Monitor Capstone
   AUTHORS: Briellyn Braithwaite
-  DESCRIPTION:
+  DESCRIPTION: MKR1310 Boards Configuration Defines
 */
 #pragma once
 
@@ -19,7 +19,10 @@
 #define PIN_ERRORLED  3
 #define PIN_BATADC    A1
 
-#define SERIALBAUD      115200
+#define DEBUG      true
+#define SERIALBAUD 115200
+// the following settings must match on the sencer and receiver
+#define USING_CRC       true
 #define LORA_AMERICA    915E6
 #define LORA_AFRICA     868E6
 #define LORA_EUROPE     433E6
@@ -30,8 +33,9 @@
 // higher not necessarily = further, but usually better strength (?)
 // The duration of a symbol is 2^SF / BW (SF: Spreading Factor, BW: Bandwidth)
 
-#define SYNCWORD    0x12 // default is 0x12, 0x34 is reserved for public communications, probably a byte
-#define PREAMBLELEN 8    // 6-65535, default 8
+#define SYNCWORD          0x12 // default is 0x12, 0x34 is reserved for public communications, probably a byte
+#define PREAMBLELEN       8    // 6-65535, default 8
+#define RECEIVER_GAINMODE 0    // Range 1-6. 0 is automatic. Applies to receiver only
 
 typedef struct {
     uint16_t ID;
