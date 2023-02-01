@@ -3,7 +3,7 @@
   VERSION: 0.0.5
   DATE: 27 January 2023
   PROJECT: Distributed Fence Monitor Capstone
-  AUTHORS: Briellyn Braithwaite
+  AUTHORS: Briellyn Braithwaite, Jack Ramsay
   DESCRIPTION:
 */
 #pragma once

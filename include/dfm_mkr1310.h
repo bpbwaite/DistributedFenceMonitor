@@ -3,7 +3,7 @@
   VERSION: 0.0.6
   DATE: 28 January 2023
   PROJECT: Distributed Fence Monitor Capstone
-  AUTHORS: Briellyn Braithwaite
+  AUTHORS: Briellyn Braithwaite, Jack Ramsay
   DESCRIPTION: MKR1310 Boards Configuration Defines
 */
 #pragma once
