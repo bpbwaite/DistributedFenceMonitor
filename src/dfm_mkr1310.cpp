@@ -15,6 +15,7 @@
 #include <LoRa.h>
 #include <RTCZero.h>
 #include <SPI.h>
+#include <Adafruit_ADXL345_U.h>
 
 // only defines unique to nodes that vary from board to board
 
@@ -25,6 +26,7 @@
 
 RTCZero rtc;
 MonitoringNodeData mnd;
+Adafruit_ADXL345_Unified adxl;
 
 void setup_mkr1310() {
 
@@ -98,6 +100,7 @@ void loop_mkr1310() {
 
     LoRa.sleep();
     delay(1000);
+
 }
 
 #endif
