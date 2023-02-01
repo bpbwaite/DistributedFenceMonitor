@@ -23,10 +23,11 @@
 #define SERIALBAUD 115200
 // the following settings must match on the sencer and receiver
 #define USING_CRC true
-const double LORA_AMERICA    = 915E6;
-const double LORA_AFRICA     = 868E6;
-const double LORA_EUROPE     = 433E6;
-const double SIGNALBANDWIDTH = 125E3; // default 125E3. among other values, can also be 250E3 or 500E3.
+
+constexpr double LORA_AMERICA    = 915E6;
+constexpr double LORA_AFRICA     = 868E6;
+constexpr double LORA_EUROPE     = 433E6;
+constexpr double SIGNALBANDWIDTH = 125E3; // default 125E3. among other values, can also be 250E3 or 500E3.
 
 #define SPREADFACTOR 10
 // ranges from 6-12, default 7, sender/receiver must match.
