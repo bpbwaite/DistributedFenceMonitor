@@ -7,4 +7,4 @@
   DESCRIPTION: An example header for all code files
 */
 
-// when you work on a file, add your name to the Authors field and update the date/version.
+// when you work on a file, add your name to the Authors field and update the date and version.
