@@ -9,13 +9,13 @@
 #include <dfm_mkr1310.h>
 #if defined(ARDUINO_SAMD_MKRWAN1310) & !defined(CENTRAL_HUB)
 
+#include <Adafruit_ADXL345_U.h>
 #include <Arduino.h>
 #include <ArduinoECCX08.h>
 #include <ArduinoLowPower.h>
 #include <LoRa.h>
 #include <RTCZero.h>
 #include <SPI.h>
-#include <Adafruit_ADXL345_U.h>
 
 // only defines unique to nodes that vary from board to board
 
@@ -67,8 +67,19 @@ void setup_mkr1310() {
     LoRa.disableCrc();
 #endif
 
-    mnd.ID             = MY_IDENTIFIER;
-    mnd.freq           = SIGNALBANDWIDTH;
+    mnd.ID = MY_IDENTIFIER;
+    switch ((int) SIGNALBANDWIDTH) {
+    case (int) LORA_AMERICA:
+        mnd.freq = 0xAC;
+        break;
+    case (int) LORA_AFRICA:
+        mnd.freq = 0xFA;
+        break;
+    case (int) LORA_EUROPE:
+        mnd.freq = 0xEE;
+        break;
+    }
+
     mnd.SF             = SPREADFACTOR;
     mnd.SyncWord       = SYNCWORD;
     mnd.packetnum      = 0;
@@ -100,7 +111,6 @@ void loop_mkr1310() {
 
     LoRa.sleep();
     delay(1000);
-
 }
 
 #endif
