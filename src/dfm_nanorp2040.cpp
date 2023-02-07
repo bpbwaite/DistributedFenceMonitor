@@ -7,7 +7,7 @@
   DESCRIPTION: Minimal test code for RP2040Connect
 */
 #include <dfm_nanorp2040.h>
-#if defined(ARDUINO_NANO_RP2040_CONNECT) & !defined(CENTRAL_NODE)
+#if defined(ARDUINO_NANO_RP2040_CONNECT) && !defined(CENTRAL_NODE)
 
 #include <Arduino.h>
 #include <Arduino_LSM6DSOX.h>
