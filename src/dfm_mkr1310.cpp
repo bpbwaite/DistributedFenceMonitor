@@ -6,8 +6,8 @@
   AUTHORS: Briellyn Braithwaite, Jack Ramsay
   DESCRIPTION: Preliminary test code for MKR1310
 */
-#include <dfm_mkr1310.h>
-#if defined(ARDUINO_SAMD_MKRWAN1310) & !defined(CENTRAL_HUB)
+#include "dfm_mkr1310.h"
+#if defined(ARDUINO_SAMD_MKRWAN1310) && !defined(CENTRAL_NODE)
 
 #include <Adafruit_ADXL345_U.h>
 #include <Arduino.h>
@@ -16,17 +16,28 @@
 #include <LoRa.h>
 #include <RTCZero.h>
 #include <SPI.h>
+#include <time.h>
 
 // only defines unique to nodes that vary from board to board
 
 #define MY_IDENTIFIER 0xA1
-// #define SET_RTC
+#define SET_RTC
 
 // global variables and objects
+bool usingCRC = false;
 
 RTCZero rtc;
 MonitoringNodeData mnd;
 Adafruit_ADXL345_Unified adxl;
+
+// functions
+
+void indicateOn() {
+    digitalWrite(PIN_STATUSLED, HIGH);
+}
+void indicateOff() {
+    digitalWrite(PIN_STATUSLED, LOW);
+}
 
 void setup_mkr1310() {
 
@@ -40,44 +51,55 @@ void setup_mkr1310() {
     Serial.begin(SERIALBAUD);
     while (!Serial)
         yield();
-    Serial.println("Serial Interface Connected!");
+    Serial.println("Notice: Serial Interface Connected!");
 #endif
 
     pinMode(PIN_LORAMODE, INPUT_PULLUP);
-    pinMode(PIN_STATUSLED, INPUT_PULLUP);
-    pinMode(PIN_ERRORLED, INPUT_PULLUP);
+    pinMode(PIN_STATUSLED, OUTPUT);
+    pinMode(PIN_ERRORLED, OUTPUT);
 
-    long mode = (digitalRead(PIN_LORAMODE) == LOW) ? LORA_AMERICA : LORA_AFRICA;
+    digitalWrite(PIN_STATUSLED, LOW);
+
+    // long mode = (digitalRead(PIN_LORAMODE) == LOW) ? LORA_AMERICA : LORA_AFRICA;
+    long mode = LORA_AMERICA;
 
     if (!LoRa.begin(mode)) {
-        Serial.println("LoRa Module Failure");
+        Serial.println("Error: LoRa Module Failure");
+        while (1)
+            ;
     }
     else {
-        Serial.println("LoRa Module Online");
+        Serial.println("Notice: LoRa Module Online");
     }
 
     LoRa.setSpreadingFactor(SPREADFACTOR);
     LoRa.setSignalBandwidth(SIGNALBANDWIDTH);
     LoRa.setSyncWord(SYNCWORD);
     LoRa.setPreambleLength(PREAMBLELEN);
-    // LoRa.setTxPower(17, PA_OUTPUT_PA_BOOST_PIN); // not well documented
+    LoRa.setTxPower(2, PA_OUTPUT_PA_BOOST_PIN); // default 17 is very powerful, trips OCP sometimes. minimum 2
+                                                // not otherwise well documented
+
 #if defined(USING_CRC)
     LoRa.enableCrc();
+    usingCRC = true;
 #else
     LoRa.disableCrc();
 #endif
 
     mnd.ID = MY_IDENTIFIER;
-    switch ((int) SIGNALBANDWIDTH) {
-    case (int) LORA_AMERICA:
+
+    switch (mode) {
+    case (long) LORA_AMERICA:
         mnd.freq = 0xAC;
         break;
-    case (int) LORA_AFRICA:
+    case (long) LORA_AFRICA:
         mnd.freq = 0xFA;
         break;
-    case (int) LORA_EUROPE:
+    case (long) LORA_EUROPE:
         mnd.freq = 0xEE;
         break;
+    default:
+        mnd.freq = 0;
     }
 
     mnd.SF             = SPREADFACTOR;
@@ -85,6 +107,14 @@ void setup_mkr1310() {
     mnd.packetnum      = 0;
     mnd.connectedNodes = 0;
     mnd.timeInTransit  = 0;
+
+#ifdef DEBUG
+    if (usingCRC)
+        Serial.println("Notice: CRC Enabled");
+    else
+        Serial.println("Notice: CRC Disabled");
+    Serial.println("Notice: Node Setup Complete");
+#endif
 }
 void loop_mkr1310() {
 
@@ -102,15 +132,21 @@ void loop_mkr1310() {
     mnd.upTime = millis();
     mnd.epoch  = rtc.getEpoch();
 
+    indicateOn();
     LoRa.beginPacket();
     mnd.packetnum += 1;
     LoRa.write((uint8_t *) &mnd, sizeof(MonitoringNodeData));
-    unsigned long tst = millis(); // TimeSTart
-    LoRa.endPacket();
-    mnd.timeInTransit += (millis() - tst);
+    unsigned long tst = micros(); // TimeSTart
+    LoRa.endPacket(true);
+    indicateOff();
+    unsigned long diff = (micros() - tst);
+    if (diff < 5000) // do not add on timer rollover
+        mnd.timeInTransit += diff;
 
-    LoRa.sleep();
-    delay(1000);
+    // LoRa.sleep();
+    Serial.print("loop ");
+    Serial.println(mnd.packetnum);
+    delay(5000);
 }
 
 #endif
