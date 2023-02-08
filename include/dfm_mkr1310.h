@@ -1,7 +1,7 @@
 /*
   FILE: DFM_MKR1310.H
-  VERSION: 0.1.0
-  DATE: 7 February 2023
+  VERSION: 0.1.1
+  DATE: 8 February 2023
   PROJECT: Distributed Fence Monitor Capstone
   AUTHORS: Briellyn Braithwaite, Jack Ramsay
   DESCRIPTION: MKR1310 Boards Configuration Defines
@@ -40,7 +40,7 @@
 // The duration of a symbol is 2^SF / BW (SF: Spreading Factor, BW: Bandwidth)
 // a symbol is a byte packed as a two-nibble pair
 
-#define SYNCWORD          0x12 // default is 0x12, 0x34 is reserved for public communications, probably a byte
+#define SYNCWORD          0x12 // default is 0x12, 0x34 is reserved for public communications. 2 bytes
 #define PREAMBLELEN       8    // 6-65535, default 8. symbols of 8 bits each
 #define CRCLEN            2    // bytes
 #define RECEIVER_GAINMODE 0    // Range 1-6. 0 is automatic. Applies to receiver only
