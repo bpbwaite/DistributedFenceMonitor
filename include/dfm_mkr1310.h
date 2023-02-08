@@ -31,14 +31,15 @@
 #define LORA_AFRICA     868E6
 #define LORA_EUROPE     433E6
 #define SIGNALBANDWIDTH 125E3 // default 125E3. among other values, can also be 250E3 or 500E3.
+// cannot be 500E3 in the European Union! Illegal!
 
 #define SPREADFACTOR 7
-// ranges from 6-12, default 7, sender/receiver must match.
-// higher not necessarily = further, but usually better strength (?)
+// ranges from 7-12, default 7, sender/receiver must match.
 // The duration of a symbol is 2^SF / BW (SF: Spreading Factor, BW: Bandwidth)
+// a symbol is a byte packed as a two-nibble pair
 
 #define SYNCWORD          0x12 // default is 0x12, 0x34 is reserved for public communications, probably a byte
-#define PREAMBLELEN       8    // 6-65535, default 8
+#define PREAMBLELEN       8    // 6-65535, default 8. symbols of 8 bits each
 #define CRCLEN            2    // bytes
 #define RECEIVER_GAINMODE 0    // Range 1-6. 0 is automatic. Applies to receiver only
 
