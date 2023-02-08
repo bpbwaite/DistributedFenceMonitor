@@ -1,9 +1,9 @@
 /*
-  FILE:
-  VERSION:
-  DATE:
-  PROJECT:
-  AUTHORS:
+  FILE: DFM_RECV_MKR1310.H
+  VERSION: 0.0.1
+  DATE: 6 February 2023
+  PROJECT: Distributed Fence Monitor Capstone
+  AUTHORS: Briellyn Braithwaite
   DESCRIPTION:
 */
 #pragma once
