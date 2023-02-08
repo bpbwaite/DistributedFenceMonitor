@@ -20,6 +20,8 @@ int counter   = 1;
 
 MonitoringNodeData mndBuf;
 
+// todo: don't use WString class (memory fragmentation issues)
+
 String epochToDate(uint32_t epc) {
     struct tm ts;
     char buf[80];
@@ -31,57 +33,57 @@ String epochToDate(uint32_t epc) {
 }
 
 String MND_toString(const MonitoringNodeData d) {
-    static const char dlm[3] = ": ";
-    static const char rn[3]  = "\r\n";
+    static const char dlm[3]  = ": ";
+    static const char crlf[3] = "\r\n";
     char itoa_buf[33];
     String s = "";
 
     s += F("ID    ");
     s += dlm;
     s += itoa(d.ID, itoa_buf, HEX);
-    s += rn;
+    s += crlf;
     s += F("Pack  ");
     s += dlm;
-    s += itoa(d.packetnum, itoa_buf, DEC);
-    s += rn;
+    s += d.packetnum;
+    s += crlf;
     s += F("Stat  ");
     s += dlm;
     s += itoa(d.status, itoa_buf, HEX);
-    s += rn;
+    s += crlf;
     s += F("Cons  ");
     s += dlm;
     s += itoa(d.connectedNodes, itoa_buf, DEC);
-    s += rn;
+    s += crlf;
     s += F("Batt  ");
     s += dlm;
     s += itoa(d.bat, itoa_buf, DEC);
-    s += rn;
+    s += crlf;
     s += F("Freq  ");
     s += dlm;
     s += itoa(d.freq, itoa_buf, HEX);
-    s += rn;
+    s += crlf;
     s += F("SF    ");
     s += dlm;
-    s += itoa(d.SF, itoa_buf, DEC);
-    s += rn;
+    s += SPREADFACTOR;
+    s += crlf;
     s += F("SW    ");
     s += dlm;
     s += itoa(d.SyncWord, itoa_buf, HEX);
-    s += rn;
+    s += crlf;
     s += F("Uptim ");
     s += dlm;
     s += itoa(d.upTime / 1000, itoa_buf, DEC);
     s += "s";
-    s += rn;
+    s += crlf;
     s += F("TOA   ");
     s += dlm;
-    s += itoa(d.timeInTransit / 1000, itoa_buf, DEC);
+    s += itoa(d.timeOnAir, itoa_buf, DEC);
     s += "ms";
-    s += rn;
+    s += crlf;
     s += F("Temp  ");
     s += dlm;
-    s += itoa(d.temp, itoa_buf, DEC);
-    s += rn;
+    s += d.temperature;
+    s += crlf;
     s += F("Epoch ");
     s += dlm;
     s += epochToDate(d.epoch);
@@ -90,12 +92,10 @@ String MND_toString(const MonitoringNodeData d) {
 }
 void setup_recv_mkr1310() {
 
-#ifdef DEBUG
     Serial.begin(SERIALBAUD);
     while (!Serial)
         yield();
     Serial.println("Notice: Serial Interface Connected!");
-#endif
 
     long mode = LORA_AMERICA;
 
@@ -121,16 +121,14 @@ void setup_recv_mkr1310() {
     LoRa.disableCrc();
 #endif
 
-#ifdef DEBUG
     if (usingCRC)
         Serial.println("Notice: CRC Enabled");
     else
         Serial.println("Notice: CRC Disabled");
+
     Serial.println("Notice: Central Node Setup Complete");
-#endif
 }
 void loop_recv_mkr1310() {
-    yield();
 
     int packetSize = LoRa.parsePacket();
     if (packetSize) {
@@ -145,7 +143,8 @@ void loop_recv_mkr1310() {
 
         Serial.println(MND_toString(mndBuf));
         Serial.print("With RSSI of ");
-        Serial.println(LoRa.packetRssi());
+        Serial.print(LoRa.packetRssi());
+        Serial.println(" dB");
         Serial.print("With SNR of ");
         Serial.println(LoRa.packetSnr());
         Serial.println();

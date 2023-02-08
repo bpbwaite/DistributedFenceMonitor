@@ -4,7 +4,7 @@
   DATE: 6 February 2023
   PROJECT: Distributed Fence Monitor Capstone
   AUTHORS: Briellyn Braithwaite
-  DESCRIPTION:
+  DESCRIPTION: Refer to DFM_MKR1310.H for details
 */
 #pragma once
 
