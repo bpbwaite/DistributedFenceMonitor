@@ -24,7 +24,6 @@
 #define SET_RTC
 
 // global variables and objects
-bool usingCRC = false;
 
 RTCZero rtc;
 MonitoringNodeData mnd;
@@ -81,7 +80,6 @@ void setup_mkr1310() {
 
 #if defined(USING_CRC)
     LoRa.enableCrc();
-    usingCRC = true;
 #else
     LoRa.disableCrc();
 #endif
@@ -108,10 +106,11 @@ void setup_mkr1310() {
     mnd.timeOnAir      = 0;
 
 #ifdef DEBUG
-    if (usingCRC)
+    if (USING_CRC)
         Serial.println("Notice: CRC Enabled");
     else
         Serial.println("Notice: CRC Disabled");
+
     Serial.println("Notice: Node Setup Complete");
 #endif
 }

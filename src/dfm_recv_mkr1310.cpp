@@ -15,8 +15,7 @@
 #include <SPI.h>
 #include <time.h>
 
-bool usingCRC = false;
-int counter   = 1;
+int counter = 1;
 
 MonitoringNodeData mndBuf;
 
@@ -116,15 +115,11 @@ void setup_recv_mkr1310() {
 
 #if defined(USING_CRC)
     LoRa.enableCrc();
-    usingCRC = true;
+    Serial.println("Notice: CRC Enabled");
 #else
     LoRa.disableCrc();
+    Serial.println("Notice: CRC Disabled");
 #endif
-
-    if (usingCRC)
-        Serial.println("Notice: CRC Enabled");
-    else
-        Serial.println("Notice: CRC Disabled");
 
     Serial.println("Notice: Central Node Setup Complete");
 }
