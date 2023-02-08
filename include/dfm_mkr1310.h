@@ -20,8 +20,9 @@
 #define PIN_ERRORLED  3
 #define PIN_BATADC    A1
 
-#define DEBUG      true
-#define SERIALBAUD 115200
+#define DEBUG         true
+#define SERIALBAUD    115200
+#define SERIALTIMEOUT 10000
 // the following settings must match on the sencer and receiver
 #define USING_CRC true
 #define GMTOFFSET -25200
@@ -38,6 +39,7 @@
 
 #define SYNCWORD          0x12 // default is 0x12, 0x34 is reserved for public communications, probably a byte
 #define PREAMBLELEN       8    // 6-65535, default 8
+#define CRCLEN            2    // bytes
 #define RECEIVER_GAINMODE 0    // Range 1-6. 0 is automatic. Applies to receiver only
 
 typedef struct {
@@ -45,14 +47,18 @@ typedef struct {
     uint32_t packetnum;
     byte status;
     uint16_t connectedNodes;
-    byte bat;
+    uint32_t bat;
     byte freq;
-    byte SF;
+    byte channel;
     byte SyncWord;
     uint32_t upTime;
-    uint32_t timeInTransit;
-    byte temp;
+    uint32_t timeOnAir;
+    float temperature;
+    float accelX;
+    float accelY;
+    float accelZ;
     uint32_t epoch;
+
 } MonitoringNodeData;
 
 void setup_mkr1310();
