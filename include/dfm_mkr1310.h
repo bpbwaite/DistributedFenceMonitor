@@ -27,9 +27,11 @@
 #define USING_CRC true
 #define GMTOFFSET -25200
 
-#define LORA_AMERICA    915E6
-#define LORA_AFRICA     868E6
-#define LORA_EUROPE     433E6
+#define LORA_AMERICA 915E6
+#define LORA_AFRICA  868E6
+#define LORA_EUROPE  433E6
+#define MEGAHERTZ    1E6
+
 #define SIGNALBANDWIDTH 125E3 // default 125E3. among other values, can also be 250E3 or 500E3.
 // cannot be 500E3 in the European Union! Illegal!
 
