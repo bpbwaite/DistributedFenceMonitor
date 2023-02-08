@@ -116,7 +116,7 @@ void setup_mkr1310() {
 }
 void loop_mkr1310() {
     // whole packet duration in milliseconds
-    static const unsigned long toa = (int) ceil(1000 * (PREAMBLELEN + sizeof(MonitoringNodeData) + CRCLEN) *
+    static const unsigned long toa = (int) ceil(1000 * (PREAMBLELEN + 2 + sizeof(MonitoringNodeData) + CRCLEN) *
                                                 (0b1 << SPREADFACTOR) / SIGNALBANDWIDTH);
 
     mnd.status = 0b00000000;
