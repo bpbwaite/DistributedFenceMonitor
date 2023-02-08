@@ -19,80 +19,80 @@ int counter = 1;
 
 MonitoringNodeData mndBuf;
 
-// todo: don't use WString class (memory fragmentation issues)
-
-String epochToDate(uint32_t epc) {
+void epchtostr(char *p, uint32_t epc) {
     struct tm ts;
-    char buf[80];
     time_t now = (time_t) (epc + GMTOFFSET);
-
-    ts = *localtime(&now);
-    strftime(buf, sizeof(buf), "%m-%d-%Y %H:%M:%S", &ts);
-    return String(buf);
+    ts         = *localtime(&now);
+    strftime(p, 20, "%m-%d-%Y %H:%M:%S", &ts);
 }
 
-String MND_toString(const MonitoringNodeData d) {
-    static const char dlm[3]  = ": ";
-    static const char crlf[3] = "\r\n";
-    char itoa_buf[33];
-    String s = "";
+// pass a buffer of size 150 or greater please
+void mndtostr(char *p, const MonitoringNodeData d) {
 
-    s += F("ID    ");
-    s += dlm;
-    s += itoa(d.ID, itoa_buf, HEX);
-    s += crlf;
-    s += F("Pack  ");
-    s += dlm;
-    s += d.packetnum;
-    s += crlf;
-    s += F("Stat  ");
-    s += dlm;
-    s += itoa(d.status, itoa_buf, HEX);
-    s += crlf;
-    s += F("Cons  ");
-    s += dlm;
-    s += itoa(d.connectedNodes, itoa_buf, DEC);
-    s += crlf;
-    s += F("Batt  ");
-    s += dlm;
-    s += itoa(d.bat, itoa_buf, DEC);
-    s += crlf;
-    s += F("Freq  ");
-    s += dlm;
-    s += itoa(d.freq, itoa_buf, HEX);
-    s += crlf;
-    s += F("SF    ");
-    s += dlm;
-    s += SPREADFACTOR;
-    s += crlf;
-    s += F("SW    ");
-    s += dlm;
-    s += itoa(d.SyncWord, itoa_buf, HEX);
-    s += crlf;
-    s += F("Uptim ");
-    s += dlm;
-    s += itoa(d.upTime / 1000, itoa_buf, DEC);
-    s += "s";
-    s += crlf;
-    s += F("TOA   ");
-    s += dlm;
-    s += itoa(d.timeOnAir, itoa_buf, DEC);
-    s += "ms";
-    s += crlf;
-    s += F("Temp  ");
-    s += dlm;
-    s += d.temperature;
-    s += crlf;
-    s += F("Epoch ");
-    s += dlm;
-    s += epochToDate(d.epoch);
+    PGM_P format = ">ID:     0x%02X\r\n"
+                   ">Pack:   %d\r\n"
+                   ">Stat:   0x%02X\r\n"
+                   ">Cons:   %d\r\n"
+                   ">Batt:   %d\r\n"
+                   ">Freq:   %02X (%s)\r\n"
+                   ">SF:     %d\r\n"
+                   ">SW:     0x%02X (%c)\r\n"
+                   ">Uptime: %ds\r\n"
+                   ">TOA:    %dms\r\n"
+                   ">Temp:   %.1f C\r\n"
+                   ">Acc X:  %.2fg\r\n"
+                   ">Acc Y:  %.2fg\r\n"
+                   ">Acc Z:  %.2fg\r\n"
+                   ">Epoch:  %s";
 
-    return s;
+    char epochStr[20];
+    epchtostr(epochStr, d.epoch);
+
+    char localeStr[9];
+    switch (d.freq) {
+    case 0xAC:
+        strcpy(localeStr, "America");
+        break;
+    case 0xFA:
+        strcpy(localeStr, "Africa");
+        break;
+    case 0xEE:
+        strcpy(localeStr, "Europe");
+        break;
+    default:
+        break;
+    }
+
+    char syncWordIsGood[4];
+    if (d.SyncWord == SYNCWORD)
+        strcpy(syncWordIsGood, "OK");
+    else
+        strcpy(syncWordIsGood, "ERR");
+
+    sprintf(p,
+            format,
+            d.ID,
+            d.packetnum,
+            d.status,
+            d.connectedNodes,
+            d.bat,
+            d.freq,
+            localeStr,
+            SPREADFACTOR,
+            d.SyncWord,
+            syncWordIsGood,
+            d.upTime / 1000,
+            d.timeOnAir,
+            d.temperature,
+            d.accelX,
+            d.accelY,
+            d.accelZ,
+            epochStr);
 }
 void setup_recv_mkr1310() {
 
     Serial.begin(SERIALBAUD);
-    while (!Serial)
+    while (!Serial && millis() < SERIALTIMEOUT)
         yield();
     Serial.println("Notice: Serial Interface Connected!");
 
@@ -124,6 +124,7 @@ void setup_recv_mkr1310() {
     Serial.println("Notice: Central Node Setup Complete");
 }
 void loop_recv_mkr1310() {
+    static char serialOutBuffer[256];
 
     int packetSize = LoRa.parsePacket();
     if (packetSize) {
@@ -136,14 +137,17 @@ void loop_recv_mkr1310() {
             ((uint8_t *) &mndBuf)[byteIndexer++] = (uint8_t) LoRa.read();
         }
 
-        Serial.println(MND_toString(mndBuf));
+        mndtostr(serialOutBuffer, mndBuf);
+        Serial.println(serialOutBuffer);
+
         Serial.print("With RSSI of ");
         Serial.print(LoRa.packetRssi());
-        Serial.println(" dB");
+        Serial.println(" dBmW");
         Serial.print("With SNR of ");
         Serial.println(LoRa.packetSnr());
         Serial.println();
     }
+    delay(10);
 }
 
 #endif
