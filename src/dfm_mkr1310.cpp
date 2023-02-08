@@ -49,7 +49,7 @@ void setup_mkr1310() {
 
 #ifdef DEBUG
     Serial.begin(SERIALBAUD);
-    while (!Serial)
+    while (!Serial && millis() < SERIALTIMEOUT)
         yield();
     Serial.println("Notice: Serial Interface Connected!");
 #endif
@@ -76,8 +76,8 @@ void setup_mkr1310() {
     LoRa.setSignalBandwidth(SIGNALBANDWIDTH);
     LoRa.setSyncWord(SYNCWORD);
     LoRa.setPreambleLength(PREAMBLELEN);
-    LoRa.setTxPower(2, PA_OUTPUT_PA_BOOST_PIN); // default 17 is very powerful, trips OCP sometimes. minimum 2
-                                                // not otherwise well documented
+    LoRa.setTxPower(17, PA_OUTPUT_PA_BOOST_PIN); // default 17 is very powerful, trips OCP sometimes. minimum 2
+                                                 // not otherwise well documented
 
 #if defined(USING_CRC)
     LoRa.enableCrc();
@@ -102,11 +102,10 @@ void setup_mkr1310() {
         mnd.freq = 0;
     }
 
-    mnd.SF             = SPREADFACTOR;
     mnd.SyncWord       = SYNCWORD;
     mnd.packetnum      = 0;
     mnd.connectedNodes = 0;
-    mnd.timeInTransit  = 0;
+    mnd.timeOnAir      = 0;
 
 #ifdef DEBUG
     if (usingCRC)
@@ -117,6 +116,9 @@ void setup_mkr1310() {
 #endif
 }
 void loop_mkr1310() {
+    // whole packet duration in milliseconds
+    static const unsigned long toa = (int) ceil(1000 * (PREAMBLELEN + sizeof(MonitoringNodeData) + CRCLEN) *
+                                                (0b1 << SPREADFACTOR) / SIGNALBANDWIDTH);
 
     mnd.status = 0b00000000;
     // all possible status bitshifts TODO
@@ -131,20 +133,24 @@ void loop_mkr1310() {
 
     mnd.upTime = millis();
     mnd.epoch  = rtc.getEpoch();
+    // analogRead();
 
     indicateOn();
-    LoRa.beginPacket();
+    unsigned long tst = millis(); // TimeSTart
     mnd.packetnum += 1;
+
+    LoRa.beginPacket();
     LoRa.write((uint8_t *) &mnd, sizeof(MonitoringNodeData));
-    unsigned long tst = micros(); // TimeSTart
     LoRa.endPacket(true);
+
+    // notice the rollover check
+    while (millis() > tst && millis() - tst < toa)
+        ;
     indicateOff();
-    unsigned long diff = (micros() - tst);
-    if (diff < 5000) // do not add on timer rollover
-        mnd.timeInTransit += diff;
 
     // LoRa.sleep();
-    Serial.print("loop ");
+    Serial.print(mnd.ID);
+    Serial.print(" loop ");
     Serial.println(mnd.packetnum);
     delay(5000);
 }
