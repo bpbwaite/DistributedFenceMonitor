@@ -1,6 +1,6 @@
 /*
   FILE: DFM_MKR1310.CPP
-  VERSION: 0.1.0
+  VERSION: 0.1.2
   DATE: 7 February 2023
   PROJECT: Distributed Fence Monitor Capstone
   AUTHORS: Briellyn Braithwaite, Jack Ramsay
@@ -60,9 +60,9 @@ void setup_mkr1310() {
     digitalWrite(PIN_STATUSLED, LOW);
 
     // long mode = (digitalRead(PIN_LORAMODE) == LOW) ? LORA_AMERICA : LORA_AFRICA;
-    long mode = LORA_AMERICA;
+    long freq = 915E6;
 
-    if (!LoRa.begin(mode)) {
+    if (!LoRa.begin(freq)) {
         Serial.println("Error: LoRa Module Failure");
         while (1)
             ;
@@ -72,10 +72,10 @@ void setup_mkr1310() {
     }
 
     LoRa.setSpreadingFactor(SPREADFACTOR);
-    LoRa.setSignalBandwidth(SIGNALBANDWIDTH);
+    LoRa.setSignalBandwidth(CHIRPBW);
     LoRa.setSyncWord(SYNCWORD);
     LoRa.setPreambleLength(PREAMBLELEN);
-    LoRa.setTxPower(17, PA_OUTPUT_PA_BOOST_PIN); // default 17 is very powerful, trips OCP sometimes. minimum 2
+    LoRa.setTxPower(15, PA_OUTPUT_PA_BOOST_PIN); // default 17 is very powerful, trips OCP sometimes. minimum 2
                                                  // not otherwise well documented
 
 #if defined(USING_CRC)
@@ -84,21 +84,8 @@ void setup_mkr1310() {
     LoRa.disableCrc();
 #endif
 
-    mnd.ID = MY_IDENTIFIER;
-
-    switch (mode) {
-    case (long) LORA_AMERICA:
-        mnd.freq = 0xAC;
-        break;
-    case (long) LORA_AFRICA:
-        mnd.freq = 0xFA;
-        break;
-    case (long) LORA_EUROPE:
-        mnd.freq = 0xEE;
-        break;
-    default:
-        mnd.freq = 0;
-    }
+    mnd.ID   = MY_IDENTIFIER;
+    mnd.freq = freq;
 
     mnd.SyncWord       = SYNCWORD;
     mnd.packetnum      = 0;
@@ -116,8 +103,8 @@ void setup_mkr1310() {
 }
 void loop_mkr1310() {
     // whole packet duration in milliseconds
-    static const unsigned long toa = (int) ceil(1000 * (PREAMBLELEN + 2 + sizeof(MonitoringNodeData) + CRCLEN) *
-                                                (0b1 << SPREADFACTOR) / SIGNALBANDWIDTH);
+    static const unsigned long toa =
+        (int) ceil(1000 * (PREAMBLELEN + 2 + sizeof(MonitoringNodeData) + CRCLEN) * (0b1 << SPREADFACTOR) / CHIRPBW);
 
     mnd.status = 0b00000000;
     // all possible status bitshifts TODO
