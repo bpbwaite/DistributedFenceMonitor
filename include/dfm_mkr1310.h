@@ -30,7 +30,7 @@
 #define NUMCHANNELS_US 64
 #define NUMCHANNELS_EU 9
 
-#define CHIRPBW 125E3 // default 125E3.
+#define CHIRPBW 125000UL // default 125E3. express as UL
 // among other values, can also be 250E3 or 500E3.
 // cannot be 500E3 in the EU
 
@@ -39,20 +39,23 @@
 // The duration of a symbol is 2^SF / BW (SF: Spreading Factor, BW: Bandwidth)
 // a symbol is a byte packed as a two-nibble pair
 
-#define REGION_TAG        915    // 915 for US, 868 for EU
-#define SYNCWORD          0x0012 // default is 0x12, 0x34 is reserved for public communications. 2 bytes
-#define PREAMBLELEN       8      // 6-65535, default 8. symbols of 8 bits each
-#define CRCLEN            2      // bytes
-#define RECEIVER_GAINMODE 0      // Range 1-6. 0 is automatic. Applies to receiver only
+#define REGION_TAG  915    // 915 for US, 868 for EU
+#define SYNCWORD    0x0012 // default is 0x12, 0x34 is reserved for public communications. 2 bytes
+#define PREAMBLELEN 8      // 6-65535, default 8. symbols of 8 bits each
+#define CRCLEN      2      // bytes
+#define CODERATE    5      // represents 4/5
 
+#define RECEIVER_GAINMODE 0 // Range 1-6. 0 is automatic. Applies to receiver only
+
+// note: alignment dictates 4 byte blocks
 typedef struct {
-    uint16_t ID;
     uint32_t packetnum;
-    byte status;
+    uint16_t ID;
     uint16_t connectedNodes;
+    uint16_t status;
+    uint16_t SyncWord;
     uint32_t bat;
-    long freq;
-    byte SyncWord;
+    int32_t freq;
     uint32_t upTime;
     uint32_t timeOnAir;
     float temperature;
