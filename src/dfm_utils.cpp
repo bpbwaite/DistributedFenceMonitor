@@ -19,13 +19,8 @@ void indicateOn() {
 void indicateOff() {
     digitalWrite(PIN_STATUSLED, LOW);
 }
-int SFtoTOAms(int sf, long bw = 125E3) {
-    // takes a spreadfactor (7-12)
-    // takes a bandwidth (default 125, units kHz)
-    // returns the time on air for such packets (ms)
-    const int toas[] = {56, 100, 200, 370, 400, 1400};
-}
-uint8_t maxPayload(int region = REGION_TAG, int sf = SPREADFACTOR, long bw = CHIRPBW) {
+uint8_t maxPayload(int region, int sf, long bw) {
+    // get the max payload in bytes for different regions
     const uint8_t us_max_125[] = {242, 125, 53, 11, 0, 0};
     const uint8_t us_max_250[] = {242, 125, 53, 11, 0, 0};
     const uint8_t us_max_500[] = {222, 222, 222, 222, 109, 33};
@@ -63,6 +58,20 @@ uint8_t maxPayload(int region = REGION_TAG, int sf = SPREADFACTOR, long bw = CHI
         break;
     }
     return 0;
+}
+double getTOA(int ps, int sf, long bw, int plen, float cr, bool ucrc) {
+    // does not support explicit header
+    // does not support LDR optimization
+    // auto applies SW len
+    // takes packet size, sf, bw, CR, and using crc
+    // returns the max time on air (ms) for such packets
+    double symboltime   = (0b1 << sf) / (double) bw;
+    double preambletime = (plen + 4.25) * symboltime;
+    int payloadbits     = (8 * ps) - (4 * sf) + 8 + (ucrc ? 16 : 0);
+    int payloadsymbols  = ceil(payloadbits / 4.0 / sf) * cr + 8;
+    double payloadtime  = payloadsymbols * symboltime;
+
+    return 1000.0 * (preambletime + payloadtime);
 }
 void epchtostr(char *p, uint32_t epc) {
     struct tm ts;

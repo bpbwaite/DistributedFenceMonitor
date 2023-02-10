@@ -14,8 +14,8 @@
 #include "dfm_mkr1310.h"
 
 // Node Functions
-int SFtoTOAms(int, long);
-uint8_t maxPayload(int, int, long);
+uint8_t maxPayload(int = REGION_TAG, int = SPREADFACTOR, long = CHIRPBW);
+double getTOA(int, int = SPREADFACTOR, long = CHIRPBW, int = PREAMBLELEN, float = CODERATE, bool = USING_CRC);
 
 // Receiver Functions
 void epchtostr(char *, uint32_t);
