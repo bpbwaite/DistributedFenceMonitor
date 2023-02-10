@@ -1,7 +1,7 @@
 /*
   FILE: DFM_MKR1310.H
-  VERSION: 0.1.4
-  DATE: 8 February 2023
+  VERSION: 0.2.0
+  DATE: 10 February 2023
   PROJECT: Distributed Fence Monitor Capstone
   AUTHORS: Briellyn Braithwaite, Jack Ramsay
   DESCRIPTION: MKR1310 Boards Configuration Defines

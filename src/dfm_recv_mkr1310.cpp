@@ -1,7 +1,7 @@
 /*
   FILE: DFM_MKR1310.CPP
-  VERSION: 0.1.5
-  DATE: 8 February 2023
+  VERSION: 0.1.6
+  DATE: 10 February 2023
   PROJECT: Distributed Fence Monitor Capstone
   AUTHORS: Briellyn Braithwaite
   DESCRIPTION: MKR1310 Central Node Code
