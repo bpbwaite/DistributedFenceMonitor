@@ -7,6 +7,7 @@
   DESCRIPTION: Preliminary test code for MKR1310
 */
 #include "dfm_mkr1310.h"
+#include "dfm_utils.h"
 #if defined(ARDUINO_SAMD_MKRWAN1310) && !defined(CENTRAL_NODE)
 
 #include <Adafruit_ADXL345_U.h>
@@ -29,15 +30,6 @@ RTCZero rtc;
 MonitoringNodeData mnd;
 Adafruit_ADXL345_Unified adxl;
 
-// functions
-
-void indicateOn() {
-    digitalWrite(PIN_STATUSLED, HIGH);
-}
-void indicateOff() {
-    digitalWrite(PIN_STATUSLED, LOW);
-}
-
 void setup_mkr1310() {
 
     rtc.begin();
@@ -50,8 +42,8 @@ void setup_mkr1310() {
     Serial.begin(SERIALBAUD);
     while (!Serial && millis() < SERIALTIMEOUT)
         yield();
-    Serial.println("Notice: Serial Interface Connected!");
 #endif
+    Serial.println(F("Notice: Serial Interface Connected!"));
 
     pinMode(PIN_LORAMODE, INPUT_PULLUP);
     pinMode(PIN_STATUSLED, OUTPUT);
@@ -63,12 +55,12 @@ void setup_mkr1310() {
     long freq = 915E6;
 
     if (!LoRa.begin(freq)) {
-        Serial.println("Error: LoRa Module Failure");
+        Serial.println(F("Error: LoRa Module Failure"));
         while (1)
             ;
     }
     else {
-        Serial.println("Notice: LoRa Module Online");
+        Serial.println(F("Notice: LoRa Module Online"));
     }
 
     LoRa.setSpreadingFactor(SPREADFACTOR);
@@ -80,8 +72,10 @@ void setup_mkr1310() {
 
 #if defined(USING_CRC)
     LoRa.enableCrc();
+    Serial.println(F("Notice: CRC Enabled"));
 #else
     LoRa.disableCrc();
+    Serial.println(F("Notice: CRC Disabled"));
 #endif
 
     mnd.ID   = MY_IDENTIFIER;
@@ -92,34 +86,15 @@ void setup_mkr1310() {
     mnd.connectedNodes = 0;
     mnd.timeOnAir      = 0;
 
-#ifdef DEBUG
-    if (USING_CRC)
-        Serial.println("Notice: CRC Enabled");
-    else
-        Serial.println("Notice: CRC Disabled");
-
-    Serial.println("Notice: Node Setup Complete");
-#endif
+    Serial.println(F("Notice: Node Setup Complete"));
 }
 void loop_mkr1310() {
-    // whole packet duration in milliseconds
-    static const unsigned long toa =
-        (int) ceil(1000 * (PREAMBLELEN + 2 + sizeof(MonitoringNodeData) + CRCLEN) * (0b1 << SPREADFACTOR) / CHIRPBW);
 
     mnd.status = 0b00000000;
-    // all possible status bitshifts TODO
-    // mnd.status |= 0b1 << 0;
-    // mnd.status |= 0b1 << 1;
-    // mnd.status |= 0b1 << 2;
-    // mnd.status |= 0b1 << 3;
-    // mnd.status |= 0b1 << 4;
-    // mnd.status |= 0b1 << 5;
-    // mnd.status |= 0b1 << 6;
-    // mnd.status |= 0b1 << 7;
 
     mnd.upTime = millis();
     mnd.epoch  = rtc.getEpoch();
-    // analogRead();
+    mnd.bat    = analogRead(PIN_BATADC);
 
     indicateOn();
     unsigned long tst = millis(); // TimeSTart
@@ -127,11 +102,7 @@ void loop_mkr1310() {
 
     LoRa.beginPacket();
     LoRa.write((uint8_t *) &mnd, sizeof(MonitoringNodeData));
-    LoRa.endPacket(true);
-
-    // notice the rollover check
-    while (millis() > tst && millis() - tst < toa)
-        ;
+    LoRa.endPacket(false);
     indicateOff();
 
     // LoRa.sleep();
