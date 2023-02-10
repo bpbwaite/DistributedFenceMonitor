@@ -49,7 +49,7 @@ void setup_mkr1310() {
     pinMode(PIN_STATUSLED, OUTPUT);
     pinMode(PIN_ERRORLED, OUTPUT);
 
-    digitalWrite(PIN_STATUSLED, LOW);
+    indicateOff();
 
     // long mode = (digitalRead(PIN_LORAMODE) == LOW) ? LORA_AMERICA : LORA_AFRICA;
     long freq = 915E6;
@@ -59,9 +59,17 @@ void setup_mkr1310() {
         while (1)
             ;
     }
-    else {
-        Serial.println(F("Notice: LoRa Module Online"));
-    }
+
+    Serial.println(F("Notice: LoRa Module Online"));
+    Serial.print(F("Notice: Using "));
+    Serial.print(freq / 1000000.0, 1);
+    Serial.println(F("MHz channel"));
+    Serial.print(F("Notice: Max payload "));
+    Serial.print(maxPayload());
+    Serial.println(F(" Bytes"));
+    Serial.print(F("Notice: TOA estimate "));
+    Serial.print(getTOA(sizeof(MonitoringNodeData)));
+    Serial.println(F(" us"));
 
     LoRa.setSpreadingFactor(SPREADFACTOR);
     LoRa.setSignalBandwidth(CHIRPBW);
@@ -97,16 +105,24 @@ void loop_mkr1310() {
     mnd.bat    = analogRead(PIN_BATADC);
 
     indicateOn();
-    unsigned long tst = millis(); // TimeSTart
     mnd.packetnum += 1;
-
     LoRa.beginPacket();
     LoRa.write((uint8_t *) &mnd, sizeof(MonitoringNodeData));
-    LoRa.endPacket(false);
+    unsigned long tstart = micros();
+    LoRa.endPacket(false); // false to block while sending
+    unsigned long toa_measured = micros() - tstart;
+
+    mnd.timeOnAir += getTOA(sizeof(MonitoringNodeData));
     indicateOff();
+    Serial.print("measured ");
+    Serial.print(toa_measured);
+    Serial.print("us\r\n");
+    Serial.print("computed ");
+    Serial.print(getTOA(sizeof(MonitoringNodeData)));
+    Serial.print("us\r\n");
 
     // LoRa.sleep();
-    Serial.print(mnd.ID);
+    Serial.print(mnd.ID, HEX);
     Serial.print(" loop ");
     Serial.println(mnd.packetnum);
     delay(5000);
