@@ -18,7 +18,7 @@
 #define PIN_DISCRETE  0
 #define PIN_STATUSLED 6
 #define PIN_ERRORLED  3
-#define PIN_BATADC    A1
+#define PIN_BATADC    A1 // not to be confused with ADC_BATTERY
 
 #define DEBUG         true
 #define SERIALBAUD    115200
@@ -30,7 +30,8 @@
 #define NUMCHANNELS_US 64
 #define NUMCHANNELS_EU 9
 
-#define CHIRPBW 125E3 // default 125E3. among other values, can also be 250E3 or 500E3.
+#define CHIRPBW 125E3 // default 125E3.
+// among other values, can also be 250E3 or 500E3.
 // cannot be 500E3 in the EU
 
 #define SPREADFACTOR 7
@@ -38,6 +39,7 @@
 // The duration of a symbol is 2^SF / BW (SF: Spreading Factor, BW: Bandwidth)
 // a symbol is a byte packed as a two-nibble pair
 
+#define REGION_TAG        915    // 915 for US, 868 for EU
 #define SYNCWORD          0x0012 // default is 0x12, 0x34 is reserved for public communications. 2 bytes
 #define PREAMBLELEN       8      // 6-65535, default 8. symbols of 8 bits each
 #define CRCLEN            2      // bytes
