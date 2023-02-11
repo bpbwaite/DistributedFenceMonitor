@@ -1,7 +1,7 @@
 /*
   FILE: DFM_MKR1310.CPP
-  VERSION: 0.1.5
-  DATE: 10 February 2023
+  VERSION: 0.1.6
+  DATE: 11 February 2023
   PROJECT: Distributed Fence Monitor Capstone
   AUTHORS: Briellyn Braithwaite, Jack Ramsay
   DESCRIPTION: Preliminary test code for MKR1310
@@ -21,7 +21,7 @@
 
 // only defines unique to nodes that vary from board to board
 
-#define MY_IDENTIFIER 0xA1
+#define MY_IDENTIFIER 0xB1
 #define SET_RTC       true
 
 // global variables and objects
@@ -94,6 +94,7 @@ void setup_mkr1310() {
     mnd.timeOnAir      = 0;
 
     Serial.println(F("Notice: Node Setup Complete"));
+    Serial.println(F("Notice: There will be no more serial messages"));
 }
 void loop_mkr1310() {
 
@@ -112,10 +113,7 @@ void loop_mkr1310() {
     indicateOff();
 
     LoRa.sleep();
-    Serial.print(mnd.ID, HEX);
-    Serial.print(" loop ");
-    Serial.println(mnd.packetnum);
-    delay(5000);
+    LowPower.deepSleep(5000);
 }
 
 #endif

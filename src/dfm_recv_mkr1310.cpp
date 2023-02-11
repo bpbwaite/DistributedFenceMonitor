@@ -17,13 +17,24 @@
 #include <SPI.h>
 #include <time.h>
 
-int counter = 1;
+#define SET_RTC true
 
+// global variables and objects
+
+RTCZero rtc;
 MonitoringNodeData mndBuf;
+
+int counter                = 1;
 long freq                  = LoRaChannelsUS[63];
 volatile int interruptFlag = 0;
 
 void setup_recv_mkr1310() {
+
+    rtc.begin();
+#if defined(SET_RTC)
+    rtc.setEpoch(COMPILE_TIME);
+    rtc.disableAlarm();
+#endif
 
     Serial.begin(SERIALBAUD);
     while (!Serial && millis() < SERIALTIMEOUT)
