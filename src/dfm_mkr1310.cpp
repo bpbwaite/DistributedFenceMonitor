@@ -22,7 +22,7 @@
 // only defines unique to nodes that vary from board to board
 
 #define MY_IDENTIFIER 0xA1
-#define SET_RTC
+#define SET_RTC       true
 
 // global variables and objects
 
@@ -52,7 +52,7 @@ void setup_mkr1310() {
     indicateOff();
 
     // long mode = (digitalRead(PIN_LORAMODE) == LOW) ? LORA_AMERICA : LORA_AFRICA;
-    long freq = 915E6;
+    long freq = LoRaChannelsUS[63];
 
     if (!LoRa.begin(freq)) {
         Serial.println(F("Error: LoRa Module Failure"));
@@ -69,7 +69,7 @@ void setup_mkr1310() {
     Serial.println(F(" Bytes"));
     Serial.print(F("Notice: TOA estimate "));
     Serial.print(getTOA(sizeof(MonitoringNodeData)));
-    Serial.println(F(" us"));
+    Serial.println(F(" ms"));
 
     LoRa.setSpreadingFactor(SPREADFACTOR);
     LoRa.setSignalBandwidth(CHIRPBW);
@@ -114,14 +114,8 @@ void loop_mkr1310() {
 
     mnd.timeOnAir += getTOA(sizeof(MonitoringNodeData));
     indicateOff();
-    Serial.print("measured ");
-    Serial.print(toa_measured);
-    Serial.print("us\r\n");
-    Serial.print("computed ");
-    Serial.print(getTOA(sizeof(MonitoringNodeData)));
-    Serial.print("us\r\n");
 
-    // LoRa.sleep();
+    LoRa.sleep();
     Serial.print(mnd.ID, HEX);
     Serial.print(" loop ");
     Serial.println(mnd.packetnum);
