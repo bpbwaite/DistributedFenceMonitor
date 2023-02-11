@@ -1,6 +1,6 @@
 /*
   FILE: DFM_MKR1310.CPP
-  VERSION: 0.1.3
+  VERSION: 0.1.5
   DATE: 10 February 2023
   PROJECT: Distributed Fence Monitor Capstone
   AUTHORS: Briellyn Braithwaite, Jack Ramsay
@@ -75,9 +75,8 @@ void setup_mkr1310() {
     LoRa.setSignalBandwidth(CHIRPBW);
     LoRa.setSyncWord(SYNCWORD);
     LoRa.setPreambleLength(PREAMBLELEN);
-    LoRa.setTxPower(15, PA_OUTPUT_PA_BOOST_PIN); // default 17 is very powerful, trips OCP sometimes. minimum 2
-                                                 // not otherwise well documented
-
+    // default 17 is very powerful, trips OCP sometimes. minimum 2
+    LoRa.setTxPower(15, PA_OUTPUT_PA_BOOST_PIN);
 #if defined(USING_CRC)
     LoRa.enableCrc();
     Serial.println(F("Notice: CRC Enabled"));
@@ -108,10 +107,7 @@ void loop_mkr1310() {
     mnd.packetnum += 1;
     LoRa.beginPacket();
     LoRa.write((uint8_t *) &mnd, sizeof(MonitoringNodeData));
-    unsigned long tstart = micros();
     LoRa.endPacket(false); // false to block while sending
-    unsigned long toa_measured = micros() - tstart;
-
     mnd.timeOnAir += getTOA(sizeof(MonitoringNodeData));
     indicateOff();
 

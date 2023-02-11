@@ -1,6 +1,6 @@
 /*
   FILE: DFM_MKR1310.CPP
-  VERSION: 0.1.7
+  VERSION: 0.1.8
   DATE: 10 February 2023
   PROJECT: Distributed Fence Monitor Capstone
   AUTHORS: Briellyn Braithwaite
@@ -32,7 +32,6 @@ void setup_recv_mkr1310() {
 
     pinMode(PIN_STATUSLED, OUTPUT);
     pinMode(LORA_IRQ, INPUT);
-
     indicateOff();
 
     if (!LoRa.begin(freq)) {
@@ -40,16 +39,13 @@ void setup_recv_mkr1310() {
         while (1)
             ;
     }
-    else {
-        Serial.println(F("Notice: LoRa Module Online"));
-    }
+    Serial.println(F("Notice: LoRa Module Online"));
 
     LoRa.setGain(RECEIVER_GAINMODE);
     LoRa.setSpreadingFactor(SPREADFACTOR);
     LoRa.setSignalBandwidth(CHIRPBW);
     LoRa.setSyncWord(SYNCWORD);
     LoRa.setPreambleLength(PREAMBLELEN);
-
 #if defined(USING_CRC)
     LoRa.enableCrc();
     Serial.println(F("Notice: CRC Enabled"));
@@ -62,42 +58,35 @@ void setup_recv_mkr1310() {
     LowPower.attachInterruptWakeup(
         digitalPinToInterrupt(LORA_IRQ), []() -> void {}, RISING);
     SPI.notUsingInterrupt(digitalPinToInterrupt(LORA_IRQ));
-
     // need to call this to reset the internal IVT over SPI
+    // interrupt attachment order matters
     LoRa.onReceive([](int sz) -> void { interruptFlag = sz; });
-
     Serial.println(F("Notice: Callback function bound to receiver"));
 
     Serial.println(F("Notice: Central Node Setup Complete"));
 }
 void loop_recv_mkr1310() {
-    static char serialOutBuffer[512];
 
     indicateOff();
 
     LoRa.receive();
-    // Serial.println("going sleepytimes");
-    //  USBDevice.detach();
-    //  LowPower.deepSleep();
+    while (!interruptFlag)
+        ;
 
-    // USBDevice.attach();
     indicateOn();
 
-    if (interruptFlag) {
-        Serial.print("RECEIVED: #");
-        Serial.println(counter++);
+    Serial.print('#');
+    // Serial.println(counter++);
 
-        int byteIndexer = 0;
-        while (LoRa.available() && byteIndexer < sizeof(MonitoringNodeData)) {
-            ((uint8_t *) &mndBuf)[byteIndexer++] = (uint8_t) LoRa.read();
-        }
+    int byteIndexer = 0;
+    while (LoRa.available() && byteIndexer < sizeof(MonitoringNodeData))
+        ((uint8_t *) &mndBuf)[byteIndexer++] = (uint8_t) LoRa.read();
 
-        mndtostr(serialOutBuffer, mndBuf);
-        Serial.println(serialOutBuffer);
-    }
+    // mndtostr(Serial, mndBuf);
+    mndtomatlab(Serial, mndBuf);
+    Serial.println();
+
     interruptFlag = 0;
-
-    delay(500);
 }
 
 #endif

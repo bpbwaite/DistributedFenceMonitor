@@ -1,6 +1,6 @@
 /*
   FILE: DFM_UTILS.CPP
-  VERSION: 0.0.1
+  VERSION: 0.0.3
   DATE: 10 February 2023
   PROJECT: Distributed Fence Monitor Capstone
   AUTHORS: Briellyn Braithwaite
@@ -81,7 +81,8 @@ void epchtostr(char *p, uint32_t epc) {
     strftime(p, 22, "%m-%d-%Y %H:%M:%S", &ts);
 }
 
-void mndtostr(char *p, const MonitoringNodeData d) {
+void mndtostr(Serial_ &s, const MonitoringNodeData d) {
+    static char p[322];
 
     char channelStr[20];
     int k;
@@ -89,14 +90,14 @@ void mndtostr(char *p, const MonitoringNodeData d) {
         for (k = 0; k < NUMCHANNELS_US; ++k)
             if (LoRaChannelsUS[k] == (long) d.freq)
                 break;
-        sprintf(channelStr, "America Ch.%d", k);
+        sprintf(channelStr, "America Ch. %d", k);
     }
     else if ((d.freq >= LoRaChannelsEU[0]) && (d.freq <= LoRaChannelsEU[NUMCHANNELS_EU - 1])) {
         int k;
         for (k = 0; k < NUMCHANNELS_EU; ++k)
             if (LoRaChannelsEU[k] == (long) d.freq)
                 break;
-        sprintf(channelStr, "Europe Ch.%d", k);
+        sprintf(channelStr, "Europe Ch. %d", k);
     }
     else
         strcpy(channelStr, "Unknown");
@@ -116,23 +117,43 @@ void mndtostr(char *p, const MonitoringNodeData d) {
     // snr relative strength is SF dependent
     float snr = LoRa.packetSnr();
 
-    PGM_P format = ">ID:     0x%02X\r\n"
-                   ">Pack:   %d\r\n"
-                   ">Stat:   0x%02X\r\n"
-                   ">Cons:   %d\r\n"
-                   ">Batt:   %d\r\n"
-                   ">Freq:   %.1fMHz (%s)\r\n"
-                   ">SW:     0x%04X (%s)\r\n"
+    PGM_P format = ">ID: 0x%02X\r\n"
+                   ">Pack: %d\r\n"
+                   ">Stat: 0x%02X\r\n"
+                   ">Cons: %d\r\n"
+                   ">Batt: %d\r\n"
+                   ">Freq: %.1fMHz (%s)\r\n"
+                   ">SW: 0x%04X (%s)\r\n"
                    ">Uptime: %ds\r\n"
-                   ">TOA:    %dms\r\n"
-                   ">Temp:   %.1fC\r\n"
-                   ">Acc X:  %.2fg\r\n"
-                   ">Acc Y:  %.2fg\r\n"
-                   ">Acc Z:  %.2fg\r\n"
-                   ">Epoch:  %s\r\n"
-                   ">Conf:   %s\r\n"
-                   ">RSSI:   %ddBmW\r\n"
-                   ">SNR:    %.1fdB";
+                   ">TOA: %dms\r\n"
+                   ">Temp: %.1fC\r\n"
+                   ">AccX: %.2fg\r\n"
+                   ">AccY: %.2fg\r\n"
+                   ">AccZ: %.2fg\r\n"
+                   ">Epoch: %s\r\n"
+                   ">Conf: %s\r\n"
+                   ">RSSI: %ddBmW\r\n"
+                   ">SNR: %.1fdB\r\n";
+
+    // use to determine the max format buffer size required, then comment out.
+    // remember to leave one for null char
+    // PGM_P formatmax = ">ID: 0xAA\r\n"
+    //                   ">Pack: 1000000000\r\n"
+    //                   ">Stat: 0xAA\r\n"
+    //                   ">Cons: 1000000000\r\n"
+    //                   ">Batt: 1000000000\r\n"
+    //                   ">Freq: 999.1fMHz (America Ch. 64)\r\n"
+    //                   ">SW: 0xAAAA (ERR)\r\n"
+    //                   ">Uptime: 1000000000s\r\n"
+    //                   ">TOA: 1000000000ms\r\n"
+    //                   ">Temp: 254.12C\r\n"
+    //                   ">AccX: -15.25g\r\n"
+    //                   ">AccY: -15.25g\r\n"
+    //                   ">AccZ: -15.25g\r\n"
+    //                   ">Epoch: 12-31-2000 24:59:59\r\n"
+    //                   ">Conf: SF12BW500\r\n"
+    //                   ">RSSI: -120dBmW\r\n"
+    //                   ">SNR: -20.0dB\r\n";
 
     sprintf(p,
             format,
@@ -155,4 +176,11 @@ void mndtostr(char *p, const MonitoringNodeData d) {
             confStr,
             LoRa.packetRssi(),
             snr);
+
+    s.print(p);
+}
+
+void mndtomatlab(Serial_ &s, const MonitoringNodeData d) {
+    for (int nb = 0; nb < sizeof(MonitoringNodeData); ++nb)
+        s.write((unsigned char) ((uint8_t *) &d)[nb]);
 }
