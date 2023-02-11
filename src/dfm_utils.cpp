@@ -9,9 +9,9 @@
 
 #include "dfm_utils.h"
 #include "dfm_mkr1310.h"
-#include <time.h>
-#include <SPI.h>
 #include <LoRa.h>
+#include <SPI.h>
+#include <time.h>
 
 void indicateOn() {
     digitalWrite(PIN_STATUSLED, HIGH);
@@ -74,6 +74,7 @@ double getTOA(int ps, int sf, long bw, int plen, float cr, bool ucrc) {
     return 1000.0 * (preambletime + payloadtime);
 }
 void epchtostr(char *p, uint32_t epc) {
+    // char* must have size 22
     struct tm ts;
     time_t now = (time_t) (epc + GMTOFFSET);
     ts         = *localtime(&now);
@@ -84,16 +85,16 @@ void mndtostr(char *p, const MonitoringNodeData d) {
 
     char channelStr[20];
     int k;
-    if (d.freq >= LoRaChannelsUS[0] && d.freq <= LoRaChannelsUS[NUMCHANNELS_US]) {
+    if ((d.freq >= LoRaChannelsUS[0]) && (d.freq <= LoRaChannelsUS[NUMCHANNELS_US - 1])) {
         for (k = 0; k < NUMCHANNELS_US; ++k)
-            if (LoRaChannelsUS[k] == d.freq)
+            if (LoRaChannelsUS[k] == (long) d.freq)
                 break;
         sprintf(channelStr, "America Ch.%d", k);
     }
-    else if (d.freq >= LoRaChannelsEU[0] && d.freq <= LoRaChannelsEU[NUMCHANNELS_EU]) {
+    else if ((d.freq >= LoRaChannelsEU[0]) && (d.freq <= LoRaChannelsEU[NUMCHANNELS_EU - 1])) {
         int k;
         for (k = 0; k < NUMCHANNELS_EU; ++k)
-            if (LoRaChannelsEU[k] == d.freq)
+            if (LoRaChannelsEU[k] == (long) d.freq)
                 break;
         sprintf(channelStr, "Europe Ch.%d", k);
     }
@@ -111,24 +112,6 @@ void mndtostr(char *p, const MonitoringNodeData d) {
 
     char confStr[10];
     sprintf(confStr, "SF%dBW%d", SPREADFACTOR, int(CHIRPBW / 1000U));
-
-    char rangeStr[6];
-    int rssi = LoRa.packetRssi();
-    int dist = 0;
-    if (rssi >= -18)
-        dist = 0;
-    else if (rssi >= -28)
-        dist = 1;
-    else if (rssi >= -48)
-        dist = 5;
-    else if (rssi >= -55)
-        dist = 10;
-    else if (rssi >= -60)
-        dist = 50;
-    else
-        dist = 5000;
-
-    sprintf(rangeStr, "~%d m", dist);
 
     // snr relative strength is SF dependent
     float snr = LoRa.packetSnr();
@@ -148,7 +131,7 @@ void mndtostr(char *p, const MonitoringNodeData d) {
                    ">Acc Z:  %.2fg\r\n"
                    ">Epoch:  %s\r\n"
                    ">Conf:   %s\r\n"
-                   ">RSSI:   %ddBmW (%s)\r\n"
+                   ">RSSI:   %ddBmW\r\n"
                    ">SNR:    %.1fdB";
 
     sprintf(p,
@@ -170,7 +153,6 @@ void mndtostr(char *p, const MonitoringNodeData d) {
             d.accelZ,
             epochStr,
             confStr,
-            rssi,
-            rangeStr,
+            LoRa.packetRssi(),
             snr);
 }
