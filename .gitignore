@@ -6,3 +6,4 @@
 .vscode/extensions.json
 *.code-workspace
 .vscode/settings.json
+src/interpreter/*.asv
