@@ -1,6 +1,6 @@
 /*
   FILE: DFM_MKR1310.CPP
-  VERSION: 0.1.8
+  VERSION: 0.2.0
   DATE: 10 February 2023
   PROJECT: Distributed Fence Monitor Capstone
   AUTHORS: Briellyn Braithwaite
@@ -82,8 +82,13 @@ void loop_recv_mkr1310() {
     while (LoRa.available() && byteIndexer < sizeof(MonitoringNodeData))
         ((uint8_t *) &mndBuf)[byteIndexer++] = (uint8_t) LoRa.read();
 
-    // mndtostr(Serial, mndBuf);
-    mndtomatlab(Serial, mndBuf);
+    ReceiverExtras r = {
+        LoRa.packetRssi(),
+        LoRa.packetSnr(),
+        CHIRPBW,
+        SPREADFACTOR,
+    };
+    mndtomatlab(Serial, mndBuf, r);
     Serial.println();
 
     interruptFlag = 0;

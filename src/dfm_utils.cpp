@@ -1,6 +1,6 @@
 /*
   FILE: DFM_UTILS.CPP
-  VERSION: 0.0.3
+  VERSION: 0.0.4
   DATE: 10 February 2023
   PROJECT: Distributed Fence Monitor Capstone
   AUTHORS: Briellyn Braithwaite
@@ -180,7 +180,9 @@ void mndtostr(Serial_ &s, const MonitoringNodeData d) {
     s.print(p);
 }
 
-void mndtomatlab(Serial_ &s, const MonitoringNodeData d) {
+void mndtomatlab(Serial_ &s, const MonitoringNodeData d, const ReceiverExtras e) {
     for (int nb = 0; nb < sizeof(MonitoringNodeData); ++nb)
         s.write((unsigned char) ((uint8_t *) &d)[nb]);
+    for (int nb = 0; nb < sizeof(ReceiverExtras); ++nb)
+        s.write((unsigned char) ((uint8_t *) &e)[nb]);
 }

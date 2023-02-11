@@ -1,7 +1,7 @@
 /*
   FILE: DFM_UTILS.H
-  VERSION: 0.0.2
-  DATE: 10 February 2023
+  VERSION: 0.0.4
+  DATE: 11 February 2023
   PROJECT: Distributed Fence Monitor Capstone
   AUTHORS: Briellyn Braithwaite
   DESCRIPTION: Functions for Distributed Fence Monitor
@@ -13,14 +13,23 @@
 #include "dfm_mkr1310.h"
 #include <Arduino.h>
 
+// Structures
+typedef struct {
+    int32_t rssi;
+    float snr;
+    uint32_t bw;
+    uint8_t sf;
+
+} ReceiverExtras;
+
 // Node Functions
 uint8_t maxPayload(int = REGION_TAG, int = SPREADFACTOR, long = CHIRPBW);
 double getTOA(int, int = SPREADFACTOR, long = CHIRPBW, int = PREAMBLELEN, float = CODERATE, bool = USING_CRC);
 
 // Receiver Functions
 void epchtostr(char *, uint32_t);
-void mndtostr(Serial_ &, const MonitoringNodeData);
-void mndtomatlab(Serial_ &, const MonitoringNodeData);
+void __attribute__((__deprecated__)) mndtostr(Serial_ &, const MonitoringNodeData);
+void mndtomatlab(Serial_ &, const MonitoringNodeData, const ReceiverExtras);
 
 // Shared Functions
 void indicateOn();
