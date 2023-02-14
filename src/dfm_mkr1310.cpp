@@ -10,14 +10,16 @@
 #include "dfm_utils.h"
 #if defined(ARDUINO_SAMD_MKRWAN1310) && !defined(CENTRAL_NODE)
 
-#include <Adafruit_ADXL345_U.h>
 #include <Arduino.h>
+#include <time.h>
+
+#include <Adafruit_ADXL345_U.h>
 #include <ArduinoECCX08.h>
 #include <ArduinoLowPower.h>
+#include <Arduino_PMIC.h>
 #include <LoRa.h>
 #include <RTCZero.h>
 #include <SPI.h>
-#include <time.h>
 
 // only defines unique to nodes that vary from board to board
 
