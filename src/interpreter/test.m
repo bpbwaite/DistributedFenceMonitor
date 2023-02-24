@@ -32,6 +32,6 @@ data = [
 (randi(2,1,8)-1)'
 ]';
 
-symbolTime = 0.100;
+symbolTime = 0.15;
 
 listenTo(data, sf, sw, crc, plen, symbolTime);

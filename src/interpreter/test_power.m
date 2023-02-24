@@ -1,8 +1,8 @@
 %/*
 %  FILE: test_power.m
-%  VERSION: 1.0.2
+%  VERSION: 1.1.0
 %  TEST DATE: 17 February 2023
-%  DATE: 19 February 2023
+%  DATE: 24 February 2023
 %  PROJECT: Distributed Fence Monitor Capstone
 %  AUTHORS: Briellyn Braithwaite
 %  DESCRIPTION: Current draw tests using external power supply
@@ -227,6 +227,10 @@ end
 
 % find tx draw
 txpows_avg = [];
+
+txpows_std = zeros(num_tests, 20, 2); 
+% will capture transmission draw for computing standard deviation
+
 for n = 1:num_tests
     probe_trig = all_probetrig(:, n);
     probe_trig(probe_trig > 2.5) = 5;
@@ -247,7 +251,11 @@ for n = 1:num_tests
         while k < length(probe_trig) && probe_trig(k) == 5
             power_accumulator = power_accumulator + probe_cur(k);
             nums_accumulated = nums_accumulated + 1;
-            k = k + 1;
+            if probe_trig(k + 1) > 0
+                % prevents overrun by single-sample desync
+                txpows_std(n, txpow, nums_accumulated) = probe_cur(k+1);
+            end
+            k = k + 1;       
         end
         meanpow = power_accumulator/nums_accumulated;
         txpow_avg(txpow - 1, n) = meanpow;
@@ -269,7 +277,7 @@ for t = 1:17
 end
 
 
-%% Final Notes
+%% Current & Power Averages
 figure, hold on
 for t = 1:17
     x = t + 1;
@@ -296,7 +304,7 @@ for t = 1:17
         x = 20;
     end
     p_avg = (mean(txpow_avg(t, :)) - r_avg/num_tests) * input_voltage;
-    stem(x, p_avg, 'r', 'LineWidth', 2)
+    stem(x, p_avg, 'r-', 'LineWidth', 2)
 end
 grid on
 title('Increase in Power Draw at different Transmission Powers')
@@ -306,3 +314,57 @@ ylabel('Power Draw (mW)')
 xlim([1 21])
 xticks(2:20)
 yticks(0:20:520)
+
+
+% Per Zapata Request
+% plot with quiescent current included
+
+figure, hold on
+for t = 1:17
+    x = t + 1;
+    if x == 18
+        x = 20;
+    end
+    
+    stem(x, mean(txpow_avg(t, :)), 'b', 'LineWidth', 2)
+    h=stem(x, r_avg/num_tests, 'r', 'LineWidth', 2);
+    set(h, 'Marker', 'none');
+end
+grid on
+title('Current Draw at different Transmission Powers')
+subtitle(['Murata LoRa Module. V_{in} = ',num2str(input_voltage, 1),'V'])
+xlabel('Transmit Power (TX)')
+ylabel('Current Draw (mA)')
+xlim([1 21])
+ylim([0 150])
+xticks(2:20)
+yticks(0:10:150)
+l1 = legend( 'Mean Transmitting Current', 'Quiescent Draw');
+set(l1,...
+    'Position',[0.15 0.76 0.35 0.0]);
+
+
+%% Power Draw with Errorbar
+
+figure, hold on
+for t = 1:17
+    x = t + 1;
+    if x == 18
+        x = 20;
+    end
+    draws = [reshape(txpows_std(1, t+1, :),1,[])...
+        reshape(txpows_std(2, t+1, :),1,[])...
+        reshape(txpows_std(3, t+1, :),1,[])...
+        reshape(txpows_std(4, t+1, :),1,[])];
+    p_avg = (mean(txpow_avg(t, :)) - r_avg/num_tests) * input_voltage ;
+    bar(x, p_avg, 'r')
+    errorbar(x, p_avg, input_voltage*std(draws)*ones(size(x)), 'k');
+end
+grid on
+title('Power Required by Transmission Levels')
+subtitle('Murata LoRa Module')
+xlabel('Transmit Power (TX)')
+ylabel('Power Draw (mW)')
+xlim([1 21])
+xticks(2:20)
+yticks(0:50:1000)

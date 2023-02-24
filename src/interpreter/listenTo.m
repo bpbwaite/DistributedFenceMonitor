@@ -31,8 +31,8 @@ end
 %% Constants
 sf = 7; % force spreadfactor sorry
 CR = 5; % coding rate, in 4/?
-tone_min = 523; % Hz
-tone_max = 987; % Hz
+tone_min = 500; % Hz
+tone_max = 900; % Hz
 tone_mid = (tone_max+tone_min)/2;
 tone_diff = tone_max-tone_min;
 sec_per_symbol = symtime; % s
