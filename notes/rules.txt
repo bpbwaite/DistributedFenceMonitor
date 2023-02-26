@@ -1,0 +1,19 @@
+Naming Conventions for Embedded Software
+
+> Types shall follow MISRA standard where possible to remove ambiguity
+> Variable names must be unique and descriptive of its purpose
+    > cannot be a keyword
+    > should not overlap with those in the STL
+    > variable names cannot begin with an underscore
+    > names should be between 3 and 31 characters in length
+> Make use of the proper capitalization
+    > built in types and functions are camelCase
+    > names and instances of structs and classes are Pascalcase
+> Make use of only this Hungarian notation:
+    > g_, for global variables
+    > sz, for null terminated strings
+    > postfix units with an underscore on variables with units
+> Defines and constants must be all capitals
+    > use underscores to separate words
+> Module names (includes) must be all lowercase
+    > use underscores to separate words

@@ -4,6 +4,6 @@
 .vscode/launch.json
 .vscode/ipch
 .vscode/extensions.json
-*.code-workspace
 .vscode/settings.json
 src/interpreter/*.asv
+*.code-workspace
