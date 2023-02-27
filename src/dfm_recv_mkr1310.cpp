@@ -91,7 +91,7 @@ void loop_recv_mkr1310() {
 
     int byteIndexer = 0;
     while (LoRa.available() && byteIndexer < sizeof(MonitoringNodeData))
-        ((uint8_t *) &mndBuf)[byteIndexer++] = (uint8_t) LoRa.read();
+        ((uint8_t *) &mndBuf)[byteIndexer++] = (uint8_t) LoRa.read();//1 byte at a time
 
     ReceiverExtras r = {
         LoRa.packetRssi(),

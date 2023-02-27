@@ -106,13 +106,13 @@ void loop_mkr1310() {
     mnd.epoch  = rtc.getEpoch();
     mnd.bat    = analogRead(PIN_BATADC);
 
-    indicateOn();
+    indicateOn();//LED Circuit Board is Active
     mnd.packetnum += 1;
-    LoRa.beginPacket();
-    LoRa.write((uint8_t *) &mnd, sizeof(MonitoringNodeData));
+    LoRa.beginPacket();//Begin to listen for a packet
+    LoRa.write((uint8_t *) &mnd, sizeof(MonitoringNodeData));//Write the data to the packet
     LoRa.endPacket(false); // false to block while sending
     mnd.timeOnAir += getTOA(sizeof(MonitoringNodeData));
-    indicateOff();
+    indicateOff();//LED Circuit Board is Off
 
     LoRa.sleep();
     LowPower.deepSleep(5000);
