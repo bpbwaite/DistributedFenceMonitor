@@ -15,34 +15,25 @@ void tearDown(void) {
 }
 
 void test_function(void) {
-    ADXL345 adxl = ADXL345();
+    ADXL345 adxl = ADXL345(1); // CS pin is pin 1
 
     adxl.powerOn();
-    adxl.setRangeSetting(4); // gs
+    adxl.setRangeSetting(2); // gs
 
     for (;;) {
 
         int x, y, z;
         unsigned long toli = 0;
-        double cx = 0, cy = 0, cz = 0;
-        for (int a = 0; a < 32; ++a) {
-            while ((millis() - toli) <= ceil(1000 / 104))
-                ;
-            adxl.readAccel(&x, &y, &z);
-            toli = millis();
-            cx += x;
-            cy += y;
-            cz += z;
-        }
-        cx /= 32.0;
-        cy /= 32.0;
-        cz /= 32.0;
-
-        Serial.print((cx - 4) * (1.0 / -130.0));
+        while ((millis() - toli) <= ceil(1000 / 104))
+            ;
+        adxl.readAccel(&x, &y, &z);
+        toli = millis();
+        if (x)
+        Serial.print(x);
         Serial.print(",\t");
-        Serial.print((cy - 3) * (-1.0 / 133.0));
+        Serial.print(y);
         Serial.print(",\t");
-        Serial.print((cz + 14) * (1.0 / 128.0));
+        Serial.print(z);
         Serial.println();
     }
 }
