@@ -59,9 +59,6 @@ typedef struct {
     uint32_t upTime;
     uint32_t timeOnAir;
     float temperature;
-    float accelX;
-    float accelY;
-    float accelZ;
     uint32_t epoch;
 
 } MonitoringNodeData;
