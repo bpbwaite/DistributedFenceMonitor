@@ -6,6 +6,7 @@
 #include <SparkFun_ADXL345.h>
 #include <Wire.h>
 
+
 void setUp(void) {
     // set stuff up here
 }
@@ -21,14 +22,22 @@ void test_function(void) {
     adxl.setRangeSetting(2); // gs
 
     for (;;) {
+        int arrayx[100];
+        int arrayy[100];
+        int arrayz[100];
+        int i =0;
 
         int x, y, z;
         unsigned long toli = 0;
         while ((millis() - toli) <= ceil(1000 / 104))
             ;
         adxl.readAccel(&x, &y, &z);
+        arrayx[i] = x;
+        arrayy[i] = y;
+        arrayz[i] = z;
+        i++;
         toli = millis();
-        if (x)
+       
         Serial.print(x);
         Serial.print(",\t");
         Serial.print(y);
