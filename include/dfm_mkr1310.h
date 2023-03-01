@@ -19,11 +19,12 @@
 #define PIN_STATUSLED 6
 #define PIN_ERRORLED  3
 #define PIN_BATADC    A1 // not to be confused with ADC_BATTERY
+#define PIN_ADXLCS    1  // chipselect pin for the accelerometer
 
 #define DEBUG         true
 #define SERIALBAUD    115200
 #define SERIALTIMEOUT 10000
-// the following settings must match on the sencer and receiver
+// the following settings must match on the sender and receiver
 #define USING_CRC true
 #define GMTOFFSET -25200
 
