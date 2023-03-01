@@ -15,21 +15,26 @@
 
 MonitoringNodeData mnd_test;
 
-ADXL345 adxl = ADXL345(1);
-
+ADXL345 adxl                 = ADXL345(1);
+volatile bool motionDetected = false;
 // Interrupt Service Routine.
 void ISR_test() {
-    printf("Interrupt!\n");
 
-    byte interruptSource = adxl.getInterruptSource();
+    // printf("Interrupt!\n");
+    motionDetected = true;
 
-    if (adxl.triggered(interruptSource, ADXL345_ACTIVITY)) {
-        printf("Activity detected!\n");
-        // and also do other stuff when we detect motion
-    }
+    // byte interruptSource = adxl.getInterruptSource();
+
+    //  if (adxl.triggered(interruptSource, ADXL345_ACTIVITY)) {
+    //  printf("Activity detected!\n");//serial print
+    // and also do other stuff when we detect motion
+
+    // }
 }
 
 void test_function(void) {
+    LowPower.attachInterruptWakeup(digitalPinToInterrupt(2), NULL, RISING); // attach interrupt to pin 2
+    attachInterrupt(digitalPinToInterrupt(2), ISR_test, RISING);            // attach interrupt to pin 2
 
     // ADXL345 setup
     // Turn it on.
@@ -51,9 +56,11 @@ void test_function(void) {
     // Turn on Interrupts for each mode (1 == ON, 0 == OFF)
     adxl.InactivityINT(1);
     adxl.ActivityINT(1);
-
-    // Enable Arduino interrupts
-    interrupts();
+    while (1) {
+        while (!motionDetected) {
+        }
+        Serial.println("Motion detected!");
+    }
 }
 
 // do not modify the functions below!
