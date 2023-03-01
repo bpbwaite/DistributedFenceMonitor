@@ -31,6 +31,37 @@
 
 RTCZero rtc;
 MonitoringNodeData mnd;
+int arrayx[100]; // entries for x;
+int arrayy[100]; // entries for y;
+int arrayz[100]; // entries for z;
+int i = 0;
+int x, y, z;
+ADXL345 adxl = ADXL345(1); // CS pin is pin 1
+
+void print_mkr1310() {
+
+    for (;;) {
+        adxl.powerOn();
+        adxl.setRangeSetting(2);
+        unsigned long toli = 0;
+        while ((millis() - toli) <= ceil(1000 / 104))
+            ;
+
+        adxl.readAccel(&x, &y, &z);
+        arrayx[i % 100] = x;
+        arrayy[i % 100] = y;
+        arrayz[i & 100] = z;
+        i++;
+        toli = millis();
+
+        Serial.print(arrayx[i]);
+        Serial.print(",\t");
+        Serial.print(arrayy[i]);
+        Serial.print(",\t");
+        Serial.print(arrayz[i]);
+        Serial.println();
+    }
+}
 
 void setup_mkr1310() {
 
@@ -98,6 +129,7 @@ void setup_mkr1310() {
     Serial.println(F("Notice: Node Setup Complete"));
     Serial.println(F("Notice: There will be no more serial messages"));
 }
+
 void loop_mkr1310() {
 
     mnd.status = 0b00000000;
@@ -106,15 +138,16 @@ void loop_mkr1310() {
     mnd.epoch  = rtc.getEpoch();
     mnd.bat    = analogRead(PIN_BATADC);
 
-    indicateOn();//LED Circuit Board is Active
+    indicateOn(); // LED Circuit Board is Active
     mnd.packetnum += 1;
-    LoRa.beginPacket();//Begin to listen for a packet
-    LoRa.write((uint8_t *) &mnd, sizeof(MonitoringNodeData));//Write the data to the packet
-    LoRa.endPacket(false); // false to block while sending
+    LoRa.beginPacket();                                       // Begin to listen for a packet
+    LoRa.write((uint8_t *) &mnd, sizeof(MonitoringNodeData)); // Write the data to the packet
+    LoRa.endPacket(false);                                    // false to block while sending
     mnd.timeOnAir += getTOA(sizeof(MonitoringNodeData));
-    indicateOff();//LED Circuit Board is Off
+    indicateOff(); // LED Circuit Board is Off
 
     LoRa.sleep();
+    print_mkr1310();
     LowPower.deepSleep(5000);
 }
 
