@@ -1,7 +1,7 @@
 /*
   FILE: DFM_UTILS.CPP
-  VERSION: 0.0.4
-  DATE: 10 February 2023
+  VERSION: 0.0.5
+  DATE: 1 March 2023
   PROJECT: Distributed Fence Monitor Capstone
   AUTHORS: Briellyn Braithwaite
   DESCRIPTION: Functions for Distributed Fence Monitor
@@ -169,9 +169,9 @@ void mndtostr(Serial_ &s, const MonitoringNodeData d) {
             d.upTime / 1000,
             d.timeOnAir,
             d.temperature,
-           // d.accelX,
-          //  d.accelY,
-           // d.accelZ,
+            0,
+            0,
+            0,
             epochStr,
             confStr,
             LoRa.packetRssi(),
