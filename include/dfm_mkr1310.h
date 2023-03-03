@@ -1,6 +1,6 @@
 /*
   FILE: DFM_MKR1310.H
-  VERSION: 0.2.0
+  VERSION: 0.2.1
   DATE: 10 February 2023
   PROJECT: Distributed Fence Monitor Capstone
   AUTHORS: Briellyn Braithwaite, Jack Ramsay
@@ -11,7 +11,6 @@
 #ifdef ARDUINO_SAMD_MKRWAN1310
 
 #include <Arduino.h>
-#include <LoRa.h>
 #include <WString.h>
 
 #define PIN_LORAMODE  2
