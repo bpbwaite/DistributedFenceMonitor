@@ -31,9 +31,9 @@
 
 RTCZero rtc;
 MonitoringNodeData mnd;
-int arrayx[100]; // entries for x;
-int arrayy[100]; // entries for y;
-int arrayz[100]; // entries for z;
+int arrayx[1000]; // entries for x;
+int arrayy[1000]; // entries for y;
+int arrayz[1000]; // entries for z;
 int i = 0;
 int x, y, z;
 ADXL345 adxl = ADXL345(1); // CS pin is pin 1
