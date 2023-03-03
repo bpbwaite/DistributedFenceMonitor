@@ -6,7 +6,7 @@
   AUTHORS: Briellyn Braithwaite
   DESCRIPTION: Functions for Distributed Fence Monitor
 */
-
+#ifdef ARDUINO_SAMD_MKRWAN1310
 #include "dfm_utils.h"
 #include "dfm_mkr1310.h"
 #include <LoRa.h>
@@ -186,3 +186,5 @@ void mndtomatlab(Serial_ &s, const MonitoringNodeData d, const ReceiverExtras e)
     for (int nb = 0; nb < sizeof(ReceiverExtras); ++nb)
         s.write((unsigned char) ((uint8_t *) &e)[nb]);
 }
+
+#endif

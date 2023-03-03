@@ -1,7 +1,7 @@
 /*
   FILE: MAIN.CPP
-  VERSION: 0.9.0
-  DATE: 25 January 2023
+  VERSION: 1.0.0
+  DATE: 3 March 2023
   PROJECT: Distributed Fence Monitor Capstone
   AUTHORS: Briellyn Braithwaite
   DESCRIPTION:
@@ -13,6 +13,8 @@
 #include "dfm_nanorp2040.h"
 #include "dfm_recv_mkr1310.h"
 #include "dfm_recv_nanorp2040.h"
+
+#ifndef PIO_UNIT_TESTING
 
 void setup() {
     // put your setup code here, to run once:
@@ -47,3 +49,5 @@ void loop() {
 #endif
 #endif
 }
+
+#endif
