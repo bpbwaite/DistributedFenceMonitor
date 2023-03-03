@@ -8,6 +8,8 @@
 */
 #include "dfm_mkr1310.h"
 #include "dfm_utils.h"
+#include "tests.h"
+
 #if defined(ARDUINO_SAMD_MKRWAN1310) && !defined(CENTRAL_NODE)
 
 #include <Arduino.h>
@@ -31,39 +33,10 @@
 
 RTCZero rtc;
 MonitoringNodeData mnd;
-int arrayx[1000]; // entries for x;
-int arrayy[1000]; // entries for y;
-int arrayz[1000]; // entries for z;
-int i = 0;
-int x, y, z;
-ADXL345 adxl = ADXL345(1); // CS pin is pin 1
-
-void print_mkr1310() {
-
-    for (;;) {
-        adxl.powerOn();
-        adxl.setRangeSetting(2);
-        unsigned long toli = 0;
-        while ((millis() - toli) <= ceil(1000 / 104))
-            ;
-
-        adxl.readAccel(&x, &y, &z);
-        arrayx[i % 100] = x;
-        arrayy[i % 100] = y;
-        arrayz[i & 100] = z;
-        i++;
-        toli = millis();
-
-        Serial.print(arrayx[i]);
-        Serial.print(",\t");
-        Serial.print(arrayy[i]);
-        Serial.print(",\t");
-        Serial.print(arrayz[i]);
-        Serial.println();
-    }
-}
 
 void setup_mkr1310() {
+
+    test_power();
 
     rtc.begin();
 #if defined(SET_RTC)
@@ -147,7 +120,6 @@ void loop_mkr1310() {
     indicateOff(); // LED Circuit Board is Off
 
     LoRa.sleep();
-    print_mkr1310();
     LowPower.deepSleep(5000);
 }
 
