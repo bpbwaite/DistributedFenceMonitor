@@ -6,23 +6,23 @@
   AUTHORS: Briellyn Braithwaite, Jack Ramsay
   DESCRIPTION: Minimal test code for RP2040Connect
 */
-#include <dfm_nanorp2040.h>
+#include "dfm_nanorp2040.h"
+
 #if defined(ARDUINO_NANO_RP2040_CONNECT) && !defined(CENTRAL_NODE)
+#include "tests.h"
 
 #include <Arduino.h>
 #include <Arduino_LSM6DSOX.h>
 #include <WiFiNINA.h>
 
-
-
 void setup_nanorp2040() {
+    test_nanoble();
 
 #ifdef DEBUG
     Serial.begin(SERIALBAUD);
     while (!Serial)
         ;
 #endif
-
     if (!IMU.begin()) {
         Serial.println("Failed to initialize IMU!");
 
