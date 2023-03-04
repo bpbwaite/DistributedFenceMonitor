@@ -1,13 +1,15 @@
 /*
   FILE: DFM_MKR1310.CPP
-  VERSION: 0.2.0
-  DATE: 10 February 2023
+  VERSION: 0.2.1
+  DATE: 3 March 2023
   PROJECT: Distributed Fence Monitor Capstone
   AUTHORS: Briellyn Braithwaite
   DESCRIPTION: MKR1310 Central Node Code
 */
 #include "dfm_mkr1310.h"
 #include "dfm_utils.h"
+#include "tests.h"
+
 #if defined(ARDUINO_SAMD_MKRWAN1310) && defined(CENTRAL_NODE)
 
 #include <Arduino.h>
@@ -29,6 +31,8 @@ long freq                  = LoRaChannelsUS[63];
 volatile int interruptFlag = 0;
 
 void setup_recv_mkr1310() {
+
+    test_russey_station();
 
     rtc.begin();
 #if defined(SET_RTC)
@@ -91,7 +95,7 @@ void loop_recv_mkr1310() {
 
     int byteIndexer = 0;
     while (LoRa.available() && byteIndexer < sizeof(MonitoringNodeData))
-        ((uint8_t *) &mndBuf)[byteIndexer++] = (uint8_t) LoRa.read();//1 byte at a time
+        ((uint8_t *) &mndBuf)[byteIndexer++] = (uint8_t) LoRa.read(); // 1 byte at a time
 
     ReceiverExtras r = {
         LoRa.packetRssi(),
