@@ -20,12 +20,12 @@ timeout = 10; % s
 gmtoffset = -25200; % s
 
 %% Connection
-spla = "COM18";
+spla = "COM15";
 s = serialport(spla, 115200);
 s.Timeout = timeout;
     
 disp("Setup complete!")
-disp("Waiting for first packet to arrive")
+disp("Receiving.")
 
 %% Ingest
 databuf.x = []; 
@@ -51,5 +51,5 @@ while 1
         
 end
 %% CTRL-C to break from data collection
-save('accel_1.mat', 'databuf');
+save('accel_N.mat', 'databuf');
 

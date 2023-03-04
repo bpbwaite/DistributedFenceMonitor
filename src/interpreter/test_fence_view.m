@@ -1,7 +1,10 @@
 %% Load Data
 clearvars
 close all
-load('fence_0.mat')
+load('fence_2.mat')
+% test 1: on the ground going down the fence
+% test 2: tried holding vertical?
+% test 3: went down fence, holding vertical :3
 disp('Data:')
 
 disp([databuf.rssi' databuf.snr'])

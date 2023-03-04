@@ -16,10 +16,10 @@ format compact
 %% Constants
 
 baud = 115200; % bps
-timeout = 60; % s
+timeout = 120; % s
 
 %% Connection
-spla = "COM8";
+spla = "COM5";
 s = serialport(spla, 115200);
 s.Timeout = timeout;
     
@@ -51,5 +51,5 @@ while 1
         
 end
 %% CTRL-C to break from data collection
-save('fence_0.mat', 'databuf');
+save('fence_4.mat', 'databuf');
 

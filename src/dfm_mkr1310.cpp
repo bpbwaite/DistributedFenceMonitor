@@ -36,7 +36,8 @@ MonitoringNodeData mnd;
 
 void setup_mkr1310() {
 
-    test_russey_mobile();
+    // test_russey_mobile();
+    test_stream();
 
     rtc.begin();
 #if defined(SET_RTC)

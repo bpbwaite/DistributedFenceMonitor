@@ -1,8 +1,16 @@
 %% Load Data
-clearvars
-close all
-load('accel_1.mat') % gets 'databuf' variable
 
+close all
+load('accel_9.mat') % gets 'databuf' variable
+
+% test circumstances: 6 mph winds
+% test 3: lucas hops fence like pro
+% test 4: jack holding it still (inside job)
+% test 5: shake
+% test 6: lucas runs into fence
+% test 7: the rhino test (insane run and slam)
+% test 8: shaking 2 panels away
+% test 9: 5 panels away, simulating attempt to climb
 %% ADXL configuration
 % ( from datasheet )
 % SENS     LSB PER G
