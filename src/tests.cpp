@@ -11,12 +11,14 @@
 
 #include <ArduinoECCX08.h>
 #include <ArduinoLowPower.h>
-#include <Arduino_PMIC.h>
 #include <LoRa.h>
 #include <RTCZero.h>
 
 #include <SparkFun_ADXL345.h>
 
+#if !defined(CENTRAL_NODE)
+#include <Arduino_PMIC.h>
+#endif
 // global variables accessed in ISRs:
 volatile bool motionDetected = false;
 
@@ -198,6 +200,148 @@ void test_isr2(void) {
     }
 }
 
+void test_russey_mobile(void) {
+#define PIN_INCREMENT_PANEL A6
+#define PIN_SAMPLE_PANEL    A5
+#define DEBOUNCERINO        200
+#define SAMPLES_PER_PUSH    5
+
+    RTCZero rtc;
+    MonitoringNodeData mnd;
+    rtc.begin();
+    rtc.setEpoch(COMPILE_TIME);
+    rtc.disableAlarm();
+
+    Serial.begin(115200);
+
+    pinMode(PIN_LORAMODE, INPUT_PULLUP);
+    pinMode(PIN_STATUSLED, OUTPUT);
+    pinMode(PIN_ERRORLED, OUTPUT);
+    pinMode(PIN_INCREMENT_PANEL, INPUT_PULLUP);
+    pinMode(PIN_SAMPLE_PANEL, INPUT_PULLUP);
+
+    long freq = LoRaChannelsUS[63];
+
+    indicateOn();
+    if (!LoRa.begin(freq)) {
+        Serial.println("LORA BAD");
+        while (1)
+            ;
+    }
+    Serial.println("LORA ONLINE");
+
+    LoRa.setSpreadingFactor(SPREADFACTOR);
+    LoRa.setSignalBandwidth(CHIRPBW);
+    LoRa.setSyncWord(SYNCWORD);
+    LoRa.setPreambleLength(PREAMBLELEN);
+    // default 17 is very powerful, trips OCP sometimes. minimum 2
+    LoRa.setTxPower(15, PA_OUTPUT_PA_BOOST_PIN);
+    LoRa.enableCrc();
+    mnd.ID   = 0x99;
+    mnd.freq = freq;
+
+    mnd.SyncWord       = SYNCWORD;
+    mnd.packetnum      = 0;
+    mnd.connectedNodes = 0;
+    mnd.timeOnAir      = 0;
+
+    mnd.status = 0b00000000;
+
+    for (;;) {
+
+        while (!digitalRead(PIN_SAMPLE_PANEL))
+            ;
+        while (digitalRead(PIN_SAMPLE_PANEL)) {
+            if (!digitalRead(PIN_INCREMENT_PANEL)) {
+                mnd.status += 1;
+                Serial.print(F("Incremented Panel, i = "));
+                Serial.println(mnd.status);
+                delay(DEBOUNCERINO);
+                while (!digitalRead(PIN_INCREMENT_PANEL))
+                    ;
+            }
+        }
+        for (int k = 0; k < SAMPLES_PER_PUSH; ++k) {
+            delay(100); // don't overwhelm silly little Matlab
+
+            mnd.upTime = millis();
+            mnd.epoch  = rtc.getEpoch();
+            mnd.bat    = analogRead(PIN_BATADC);
+
+            indicateOn();
+            mnd.packetnum += 1;
+            LoRa.beginPacket();
+            LoRa.write((uint8_t *) &mnd, sizeof(MonitoringNodeData));
+            LoRa.endPacket(false);
+            mnd.timeOnAir += getTOA(sizeof(MonitoringNodeData));
+            indicateOff();
+        }
+        Serial.println("Sent Sample :3");
+        delay(DEBOUNCERINO);
+    }
+}
+void test_russey_station(void) {
+    MonitoringNodeData mndBuf;
+    long freq = LoRaChannelsUS[63];
+    Serial.begin(SERIALBAUD);
+    while (!Serial && millis() < SERIALTIMEOUT)
+        yield();
+
+    pinMode(PIN_STATUSLED, OUTPUT);
+    pinMode(LORA_IRQ, INPUT);
+
+    indicateOn();
+    if (!LoRa.begin(freq)) {
+        while (1)
+            ;
+    }
+    LoRa.setGain(RECEIVER_GAINMODE);
+    LoRa.setSpreadingFactor(SPREADFACTOR);
+    LoRa.setSignalBandwidth(CHIRPBW);
+    LoRa.setSyncWord(SYNCWORD);
+    LoRa.setPreambleLength(PREAMBLELEN);
+    LoRa.enableCrc();
+
+    for (;;) {
+        indicateOff();
+
+        while (!LoRa.parsePacket())
+            ;
+
+        indicateOn();
+
+        Serial.print('#');
+
+        int byteIndexer = 0;
+        while (LoRa.available() && byteIndexer < sizeof(MonitoringNodeData))
+            ((uint8_t *) &mndBuf)[byteIndexer++] = (uint8_t) LoRa.read();
+
+        ReceiverExtras r = {
+            LoRa.packetRssi(),
+            LoRa.packetSnr(),
+            CHIRPBW,
+            SPREADFACTOR,
+        };
+        frssitomatlab(Serial, mndBuf, r);
+        Serial.println();
+    }
+}
+void frssitomatlab(Serial_ &s, const MonitoringNodeData d, const ReceiverExtras r) {
+
+    static TestPing p;
+
+    p.panelNum = d.status;
+    p.rssi     = r.rssi;
+    p.snr      = r.snr;
+
+    // Serial.print("status");
+    // Serial.println(d.status);
+    // Serial.print("rssi");
+    // Serial.println(r.rssi);
+
+    for (int nb = 0; nb < sizeof(TestPing); ++nb)
+        s.write((unsigned char) ((uint8_t *) &p)[nb]);
+}
 #endif
 
 #if defined(ARDUINO_NANO_RP2040_CONNECT)
