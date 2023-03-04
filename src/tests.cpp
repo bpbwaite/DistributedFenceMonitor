@@ -116,7 +116,10 @@ void test_stream(void) {
 
         adxl.readAccel(&accelData.x, &accelData.y, &accelData.z);
         toli = millis();
+
+        Serial.write((unsigned char) '#');
         adtomatlab(Serial, accelData);
+        Serial.println();
     }
 }
 

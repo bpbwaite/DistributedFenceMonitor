@@ -55,7 +55,7 @@ void setup_mkr1310() {
 
     indicateOff();
 
-    test_accel();
+    test_stream();
 
     // long mode = (digitalRead(PIN_LORAMODE) == LOW) ? LORA_AMERICA : LORA_AFRICA;
     long freq = LoRaChannelsUS[63];
