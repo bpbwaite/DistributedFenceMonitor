@@ -20,6 +20,9 @@
 // global variables accessed in ISRs:
 volatile bool motionDetected = false;
 
+// global variables and objects
+AccelData accelData;
+
 // Interrupt Service Routines:
 void isr() {
 
@@ -73,16 +76,55 @@ void test_accel(void) {
         arrayy[i % 10] = y;
         arrayz[i % 10] = z;
 
-        Serial.print(arrayx[i % 10]);
+        Serial.print(x);
         Serial.print(",\t");
-        Serial.print(arrayy[i % 10]);
+        Serial.print(y);
         Serial.print(",\t");
-        Serial.print(arrayz[i % 10]);
+        Serial.print(z);
         Serial.println();
 
         i++;
     }
 }
+
+void test_stream(void) {
+
+    ADXL345 adxl = ADXL345(1); // CS pin is pin 1
+
+    if (!Serial)
+        Serial.begin(115200);
+
+    adxl.powerOn();
+    adxl.setSpiBit(0);
+    adxl.setRangeSetting(2); // gs
+    // adxl.set_bw(ADXL345_BW_100);
+    // Serial.println(adxl.get_bw_code());
+    adxl.setInterrupt(ADXL345_DATA_READY, true);
+    adxl.setInterruptMapping(ADXL345_DATA_READY, ADXL345_INT2_PIN);
+
+    //  delay(3000);
+
+    accelData.x = 0;
+    accelData.y = 0;
+    accelData.z = 0;
+
+    for (;;) {
+
+        unsigned long toli = 0;
+        while ((millis() - toli) <= ceil(1000 / 104))
+            ;
+
+        adxl.readAccel(&accelData.x, &accelData.y, &accelData.z);
+        toli = millis();
+        adtomatlab(Serial, accelData);
+    }
+}
+
+void adtomatlab(Serial_ &s, const AccelData d) {
+    for (int nb = 0; nb < sizeof(AccelData); ++nb)
+        s.write((unsigned char) ((uint8_t *) &d)[nb]);
+}
+
 void test_power(void) {
     pinMode(PIN_STATUSLED, OUTPUT);
     indicateOff();
