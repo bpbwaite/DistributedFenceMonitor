@@ -1,7 +1,7 @@
 %% Load Data
 
 close all
-load('accel_9.mat') % gets 'databuf' variable
+load('accel_3.mat') % gets 'databuf' variable
 
 % test circumstances: 6 mph winds
 % test 3: lucas hops fence like pro
