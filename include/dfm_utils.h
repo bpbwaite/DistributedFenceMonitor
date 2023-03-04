@@ -22,6 +22,19 @@ typedef struct {
 
 } ReceiverExtras;
 
+typedef struct {
+    int32_t panelNum;
+    int32_t rssi;
+    float snr;
+
+} TestPing;
+
+typedef struct {
+    int x;
+    int y;
+    int z;
+} AccelData;
+
 // Node Functions
 uint8_t maxPayload(int = REGION_TAG, int = SPREADFACTOR, long = CHIRPBW);
 double getTOA(int, int = SPREADFACTOR, long = CHIRPBW, int = PREAMBLELEN, float = CODERATE, bool = USING_CRC);
