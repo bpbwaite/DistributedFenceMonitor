@@ -36,13 +36,27 @@ void isr() {
 }
 
 void test_accel(void) {
+    static int arrayx[10]; // entries for x;
+    static int arrayy[10]; // entries for y;
+    static int arrayz[10]; // entries for z;
+
+    delay(500);
+
     ADXL345 adxl = ADXL345(1); // CS pin is pin 1
 
+    if (!Serial)
+        Serial.begin(115200);
+
     adxl.powerOn();
+    adxl.setSpiBit(0);
     adxl.setRangeSetting(2); // gs
-    int arrayx[100];         // entries for x;
-    int arrayy[100];         // entries for y;
-    int arrayz[100];         // entries for z;
+    // adxl.set_bw(ADXL345_BW_100);
+    Serial.println(adxl.get_bw_code());
+    adxl.setInterrupt(ADXL345_DATA_READY, true);
+    adxl.setInterruptMapping(ADXL345_DATA_READY, ADXL345_INT2_PIN);
+
+    delay(3000);
+
     int i = 0;
     int x, y, z;
 
@@ -53,18 +67,20 @@ void test_accel(void) {
             ;
 
         adxl.readAccel(&x, &y, &z);
-        arrayx[i % 100] = x;
-        arrayy[i % 100] = y;
-        arrayz[i & 100] = z;
-        i++;
         toli = millis();
 
-        Serial.print(arrayx[i]);
+        arrayx[i % 10] = x;
+        arrayy[i % 10] = y;
+        arrayz[i % 10] = z;
+
+        Serial.print(arrayx[i % 10]);
         Serial.print(",\t");
-        Serial.print(arrayy[i]);
+        Serial.print(arrayy[i % 10]);
         Serial.print(",\t");
-        Serial.print(arrayz[i]);
+        Serial.print(arrayz[i % 10]);
         Serial.println();
+
+        i++;
     }
 }
 void test_power(void) {

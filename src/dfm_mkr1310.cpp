@@ -36,8 +36,6 @@ MonitoringNodeData mnd;
 
 void setup_mkr1310() {
 
-    test_power();
-
     rtc.begin();
 #if defined(SET_RTC)
     rtc.setEpoch(COMPILE_TIME);
@@ -56,6 +54,8 @@ void setup_mkr1310() {
     pinMode(PIN_ERRORLED, OUTPUT);
 
     indicateOff();
+
+    test_accel();
 
     // long mode = (digitalRead(PIN_LORAMODE) == LOW) ? LORA_AMERICA : LORA_AFRICA;
     long freq = LoRaChannelsUS[63];
