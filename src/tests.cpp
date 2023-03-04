@@ -104,13 +104,13 @@ void test_stream(void) {
 
     //  delay(3000);
 
-    accelData.x = 0;
-    accelData.y = 0;
-    accelData.z = 0;
+    accelData.x        = 0;
+    accelData.y        = 0;
+    accelData.z        = 0;
+    unsigned long toli = 0;
 
     for (;;) {
 
-        unsigned long toli = 0;
         while ((millis() - toli) <= ceil(1000 / 104))
             ;
 
