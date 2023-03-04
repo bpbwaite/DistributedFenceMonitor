@@ -33,3 +33,5 @@ plot(t, databuf.z, 'b', 'linewidth', 2)
 xlabel('t (s)')
 ylabel('Acceleration, G''s')
 
+legend('X', 'Y', 'Z')
+
