@@ -51,5 +51,5 @@ while 1
         
 end
 %% CTRL-C to break from data collection
-save('fence_4.mat', 'databuf');
+save('fence_N.mat', 'databuf');
 
