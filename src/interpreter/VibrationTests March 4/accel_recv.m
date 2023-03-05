@@ -1,10 +1,11 @@
 %/*
-%  FILE:
-%  VERSION: 0.0.1
-%  DATE: 
+%  FILE: accel_recv.m
+%  VERSION: 1.0.0
+%  TEST DATE: 4 March 2023
+%  DATE: 4 March 2023
 %  PROJECT: Distributed Fence Monitor Capstone
 %  AUTHORS: Briellyn Braithwaite
-%  DESCRIPTION: 
+%  DESCRIPTION:
 %*/
 
 %% Setup
@@ -51,5 +52,5 @@ while 1
         
 end
 %% CTRL-C to break from data collection
-save('accel_N.mat', 'databuf');
+%save('accel_N.mat', 'databuf');
 

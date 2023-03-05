@@ -1,7 +1,17 @@
+%/*
+%  FILE: test_fence_view.m
+%  VERSION: 1.0.0
+%  TEST DATE: 4 March 2023
+%  DATE: 4 March 2023
+%  PROJECT: Distributed Fence Monitor Capstone
+%  AUTHORS: Briellyn Braithwaite
+%  DESCRIPTION:
+%*/
+
 %% Load Data
 clearvars
 close all
-load('fence_2.mat')
+load('fence_3.mat')
 % test 1: on the ground going down the fence
 % test 2: tried holding vertical?
 % test 3: went down fence, holding vertical :3
