@@ -1,19 +1,19 @@
 %/*
 %  FILE: accel_analysis.m
-%  VERSION: 1.0.0
+%  VERSION: 1.0.1
 %  TEST DATE: 4 March 2023
-%  DATE: 4 March 2023
+%  DATE: 5 March 2023
 %  PROJECT: Distributed Fence Monitor Capstone
 %  AUTHORS: Briellyn Braithwaite
 %  DESCRIPTION:
 %*/
 
 %% Load Data
-
+test_name = 'accel_7.mat';
 close all
-load('accel_2.mat') % gets 'databuf' variable
+load(test_name) % gets 'databuf' variable
 
-% test circumstances: 6 mph winds
+% test circumstances: 6 mph winds, 10ft wide panels, mounted center
 % test 3: lucas hops fence like pro
 % test 4: jack holding it still (inside job)
 % test 5: shake
@@ -50,15 +50,17 @@ figure, hold on
 grid on
 plot(t, databuf.z, 'r', 'linewidth', 2);
 % Plot 'error'
-plot(t, databuf.z * 1.01, 'k-.', 'linewidth', 1);
-plot(t, databuf.z * 0.99, 'k-.', 'linewidth', 1);
+%plot(t, databuf.z * 1.01, 'k-.', 'linewidth', 1);
+%plot(t, databuf.z * 0.99, 'k-.', 'linewidth', 1);
 
 xlabel('t (s)')
-ylabel('Raw Signal')
+ylabel('Raw ADC Signal')
 xlim([0 t(end)])
 ylim([lower_raw_limit upper_raw_limit])
 xticks(0:1:floor(t(end)))
+title(['Test "', test_name, '" Datapoints'],'Interpreter','none')
 
+%%
 % scan through increments. if the greatest difference is less
 % than a threshold difference, in m/s2,
 % then average the increment and set that as the quiescent level
@@ -79,7 +81,7 @@ thresh = 8 * g /  adxl_lsbs_per_g;
 
 found_quiet = 0;
 for dx = 1:ceil(inc_size_sec*Fs):floor(t(end)*Fs)
-    dx_end = dx + inc_size_sec*Fs;
+    dx_end = min(dx + inc_size_sec*Fs, length(z));
     d_examine = z(dx:dx_end);
     if abs(diff([max(d_examine), min(d_examine)])) < thresh
         found_quiet = 1;
@@ -90,7 +92,7 @@ end
 m = mean(z(dx:dx_end));
 
 % expand the endpoint (for visualization purposes):
-while abs(diff([z(dx_end), m])) < thresh/2
+while dx_end < length(z) && abs(diff([z(dx_end), m])) < thresh/2
     dx_end = dx_end + 1;
 end
 if found_quiet
@@ -103,11 +105,11 @@ z_pow = z.^2;
 grid on
 plot(t, z_pow, 'r', 'linewidth', 2);
 xlabel('t (s)')
-ylabel('Signal Power')
+ylabel('Signal Power (m^2/s^4)')
 xlim([0 t(end)])
-ylim([0 600])
 xticks(0:1:floor(t(end)))
 yticks(0:50:600)
+title("Power Analysis")
 
 if found_quiet
 plot([dx/Fs dx_end/Fs], [0 0], 'g', 'linewidth',3)

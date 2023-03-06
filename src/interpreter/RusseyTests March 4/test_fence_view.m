@@ -49,6 +49,7 @@ grid on
 plot(databuf.panel, databuf.snr, 'bo', 'linewidth', 2)
 xlabel('Panels Between Transceivers')
 ylabel('SNR (>7 is good)')
+xlim([-1 23])
 
 % plot mean at each panel
 for p=min(databuf.panel):max(databuf.panel)

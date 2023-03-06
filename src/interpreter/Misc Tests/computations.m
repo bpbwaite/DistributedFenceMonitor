@@ -42,7 +42,7 @@ dc_transmitter = 0;
 %% worst case scenario: always listening and processing, frequent transmitting
 dc_cpu = 1;
 dc_receiver = 1;
-dc_transmitter = 0.01; % (legal limit)
+dc_transmitter = 0.10; % (legal limit in some places)
 
 %% Compute:
 current_draw = draw_constant + draw_other + ...
