@@ -1,6 +1,28 @@
 # DistributedFenceMonitor
 
-Repository for the Distributed Fence Monitor Capstone
+DFM Repository for the Embry-Riddle Aeronautical University Distributed Fence Monitor Capstone.
 
-- The source files you should edit are src/dfm_mkr1310.cpp OR src/dfm_nanorp2040.cpp, for the two potential microcontrollers.
-"main.cpp" is set up so that platformIO can compile and upload the two sources separately, so don't edit without permission.
+*In Association with ICARUS and ERP.*
+
+## How to Use
+
+- The nodal source file is 'src/dfm_mkr1310.cpp'.
+- The central source file is 'src/dfm_recv_mkr1310.cpp'.
+- The "main.cpp" is set up so that PlatformIO can compile and upload multiple sources separately, depending on the environment.
+
+## Project Members
+
+- Briellyn Braithwaite
+- Jack Ramsay
+- Lucas Marin
+- Mike Paff
+- Renzo Mena
+- Zachary Couch
+
+## Advisors
+
+- Dr. Zapata
+- Dr. Aranzazu
+- Dr. Bruder
+- Dr. Dorfling
+- Dr. Sevic
