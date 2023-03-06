@@ -5,5 +5,5 @@
 .vscode/ipch
 .vscode/extensions.json
 .vscode/settings.json
-src/interpreter/*.asv
+*.asv
 *.code-workspace
