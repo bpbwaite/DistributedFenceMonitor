@@ -1,3 +1,12 @@
+%/*
+%  FILE: test_fence_analysis.m
+%  VERSION: 1.0.0
+%  TEST DATE: 4 March 2023
+%  DATE: 5 March 2023
+%  PROJECT: Distributed Fence Monitor Capstone
+%  AUTHORS: Briellyn Braithwaite
+%  DESCRIPTION:
+%*/
 %% Load Data
 clearvars
 close all
@@ -39,8 +48,8 @@ for p=min(databuf.panel):max(databuf.panel)
 end
 
 title('Signal Strength vs. Distance')
-subtitle('Configuration: SF7BW125, Tx = 15')
+subtitle('Configuration: SF7BW125, Tx = 15, 5 Samples')
 xlabel('Distance Between Transceivers (Panels)')
-ylabel('RSSI (dB mW)')
+ylabel('Mean RSSI (dB mW)')
 xticks(0:1:25)
 yticks(-120:5:-45)
