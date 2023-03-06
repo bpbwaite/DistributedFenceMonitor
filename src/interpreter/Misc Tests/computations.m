@@ -1,12 +1,13 @@
 %% Battery Life
 % configuration
 format compact, format longg
-bat_capacity = 1500;    % mAh
+bat_capacity = 2000;    % mAh
 efficiency = 0.8;       % how much of the battery is usable
 
 %% Draw in milliAmperes wrt 3.3v rail:
 % constants:
 draw_constant = 0.1;    % 0.1 to 0.5
+draw_constant = 18;    % if LED is ON
 draw_other = 0.027;     % cryptochip, io, flash
 
 % draw_cpu: 4.6 to 5.7
@@ -16,7 +17,7 @@ draw_other = 0.027;     % cryptochip, io, flash
 %% optimistic values:
 draw_cpu = 4.8;        
 draw_receiver = 12.5;   
-draw_transmitter = 80; 
+draw_transmitter = 60; 
 %% pessimistic values:
 draw_cpu = 5.5;         
 draw_receiver = 15.0;   
