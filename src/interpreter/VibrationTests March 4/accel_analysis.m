@@ -2,14 +2,15 @@
 %  FILE: accel_analysis.m
 %  VERSION: 1.0.1
 %  TEST DATE: 4 March 2023
-%  DATE: 5 March 2023
+%  DATE: 6 March 2023
 %  PROJECT: Distributed Fence Monitor Capstone
 %  AUTHORS: Briellyn Braithwaite
 %  DESCRIPTION:
 %*/
 
 %% Load Data
-test_name = 'accel_7.mat';
+cd(fileparts(matlab.desktop.editor.getActiveFilename)); % Set the working dir to dir of this file
+test_name = 'accel_3.mat';
 close all
 load(test_name) % gets 'databuf' variable
 
@@ -46,7 +47,7 @@ g = 9.81;
 t = 0:(1/Fs):length(databuf.x)/Fs;
 t = t(1:length(databuf.x));
 
-figure, hold on
+figure(1), hold on
 grid on
 plot(t, databuf.z, 'r', 'linewidth', 2);
 % Plot 'error'
@@ -66,18 +67,19 @@ title(['Test "', test_name, '" Datapoints'],'Interpreter','none')
 % then average the increment and set that as the quiescent level
 % (will be run on embedded hardware in the future)
 
-figure, hold on
+figure(2), hold on
 
-% Scale the variables to m/s^2
+% Scale the variable to m/s^2
 z = g * databuf.z / adxl_lsbs_per_g;
 
 inc_size_sec = 1;
 
-thresh = 8 * g /  adxl_lsbs_per_g;
-% 5: very tight
-% 6: tight
-% 8: regular
-% 12: lax
+thresh = 50; % modify this value (lsbs)
+
+% read the below value for software
+thresh_in_62_5_mg_incs = ceil((thresh / adxl_lsbs_per_g) / (62.5/1000));
+thresh = thresh * g /  adxl_lsbs_per_g;
+
 
 found_quiet = 0;
 for dx = 1:ceil(inc_size_sec*Fs):floor(t(end)*Fs)
@@ -108,9 +110,12 @@ xlabel('t (s)')
 ylabel('Signal Power (m^2/s^4)')
 xlim([0 t(end)])
 xticks(0:1:floor(t(end)))
-yticks(0:50:600)
 title("Power Analysis")
 
 if found_quiet
-plot([dx/Fs dx_end/Fs], [0 0], 'g', 'linewidth',3)
+    plot([dx/Fs dx_end/Fs], [0 0], 'g', 'linewidth',3)
+    
+    m = m/g*adxl_lsbs_per_g;
+    figure(1), hold on
+    plot(t, databuf.z - m, 'b', 'linewidth', 1);
 end
