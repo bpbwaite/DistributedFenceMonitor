@@ -39,58 +39,7 @@ void test_detection(void) {
     int z_accelerometer[SIZE]; // Data from the accelerometer's z-axis
     int accel_reading = 0;     // Location within the accelerometer data arrays
     bool interrupted  = false; // Interrupt flag
-
-    MonitoringNodeData mnd_test;
-    ADXL345 adxl = ADXL345(1);
-
-    Serial.begin(SERIALBAUD);
-    while (!Serial && millis() < SERIALTIMEOUT)
-        yield();
-    Serial.println(F("Notice: Serial Interface Connected!"));
-    mnd_test.ID   = 0x99;
-    mnd_test.freq = 915000000;
-
-    mnd_test.SyncWord       = SYNCWORD;
-    mnd_test.packetnum      = 0;
-    mnd_test.connectedNodes = 0;
-    mnd_test.timeOnAir      = 0;
-
-    // ADXL345 setup
-    // Turn it on.
-    adxl.powerOn();
-
-    adxl.setRangeSetting(4); // 4g
-
-    adxl.setSpiBit(0); // Configure the device to be in 4 wire SPI mode when set to '0' or 3 wire SPI mode when set to 1
-                       // Default: Set to 1
-                       // SPI pins on the ATMega328: 11, 12 and 13 as reference in SPI Library
-
-    adxl.setActivityXYZ(1, 1, 1);  // Set to activate movement detection in the axes (1 == ON, 0 == OFF)
-    adxl.setActivityThreshold(75); // 62.5mg per increment   // Set activity   // Inactivity thresholds (0-255)
-
-    adxl.setInactivityXYZ(1, 1, 1);  // Set to detect inactivity in all the axes (1 == ON, 0 == OFF)
-    adxl.setInactivityThreshold(75); // 62.5mg per increment   // Set inactivity // Inactivity thresholds (0-255)
-    adxl.setTimeInactivity(1);       // How many seconds of no activity is inactive?
-
-    // Turn on Interrupts for each mode (1 == ON, 0 == OFF)
-    adxl.InactivityINT(1);
-    adxl.ActivityINT(1);
-
     int x, y, z;
-
-    // Read the accelerometer and record the data in the arrays.
-    adxl.readAccel(&x, &y, &z);
-    x_accelerometer[accel_reading] = x;
-    y_accelerometer[accel_reading] = y;
-    z_accelerometer[accel_reading] = z;
-
-    // Note that accel_reading should never be at or above the maximum value of SIZE.
-    // Otherwise, we might run into an out-of-bounds error.
-    accel_reading++;
-    if (accel_reading >= SIZE) {
-        accel_reading = 0;
-    }
-
     // variable delcaration
     int accelX, accelY, accelZ;
     int thresholdX = DEFAULT_THRESH;
@@ -104,21 +53,100 @@ void test_detection(void) {
     int blwThreshY = 0;
     int blwThreshZ = 0;
 
-    for (unsigned int index = 0; a < sizeof(x_accelerometer);
-         index++) { // sizeof(x_accelerometer) or accel_reading --- which would be better
-        accelX  = x_accelerometer[index];
-        accelY  = y_accelerometer[index];
-        accelZ  = z_accelerometer[index];
-        energyX = pow(accelX, 2.0); // forgot times (t)time
-        energyY = pow(accelY, 2.0); // should the time be based on the internal clock?
-        energyZ = pow(accelZ, 2.0); // we can I look for finding code to interact with the microprocessor
-    }
+    MonitoringNodeData mnd_test;
+    ADXL345 adxl = ADXL345(1);
 
-    mnd_test.status = 0b00000000;
+    Serial.begin(SERIALBAUD);
+    while (!Serial && millis() < SERIALTIMEOUT)
+        yield();
+    Serial.println(F("Notice: Serial Interface Connected!"));
 
-    mnd_test.upTime = millis();
+    mnd_test.ID             = 0x99;
+    mnd_test.freq           = 915000000;
+    mnd_test.SyncWord       = SYNCWORD;
+    mnd_test.packetnum      = 0;
+    mnd_test.connectedNodes = 0;
+    mnd_test.timeOnAir      = 0;
+    mnd_test.status         = 0b00000000;
+    mnd_test.upTime         = millis();
     // mnd.epoch  = rtc.getEpoch();
     mnd_test.bat = analogRead(PIN_BATADC);
+
+    // ADXL345 setup
+    adxl.powerOn();
+    adxl.setSpiBit(0); // 4-Wire SPI
+    adxl.setRangeSetting(2);
+
+    adxl.setFullResBit(1);
+    adxl.set_bw(ADXL345_BW_50);
+    // adxl.setRate(); // i2c method?
+
+    adxl.setInterruptLevelBit(0); // means the pin RISES on interrupt
+    adxl.setInterrupt(ADXL345_DATA_READY, true);
+    adxl.setInterruptMapping(ADXL345_DATA_READY, ADXL345_INT2_PIN);
+    adxl.setActivityAc(1);        // AC coupled activitiy
+    adxl.setActivityXYZ(1, 1, 1); // Set to activate movement detection in the axes (1 == ON, 0 == OFF)
+    adxl.setActivityThreshold(5); // 62.5mg per increment   // Set activity   // Inactivity thresholds (0-255)
+    // Turn on Interrupts for each mode (1 == ON, 0 == OFF)
+    adxl.ActivityINT(1);
+    adxl.setInterruptMapping(ADXL345_ACTIVITY, ADXL345_INT1_PIN);
+    // ADXL345_FIFO_STATUS; // can we change?
+
+    pinMode(7, INPUT);
+    noInterrupts();
+    attachInterrupt(7, isr, RISING);
+    delay(1000); // needs some time to boot? determine empirically please
+    if (digitalRead(7)) {
+        for (int i = 0; i < 33; ++i)
+            adxl.readAccel(&x, &y, &z); // clears interrupt if present, clear FIFO
+    }
+
+    Serial.println(F("Interrupt Attached!"));
+    interrupts();
+    AccelData dummy;
+
+    for (;;) {
+
+        while (!motionDetected)
+            ; // stall to simulate sleeping
+        motionDetected = false;
+
+        byte whichInterrupt = adxl.getInterruptSource();
+        // adxl.setInterrupt(whichInterrupt, false); // try this, usually reading alone works tho
+        // for (int j = 0; j < 100; ++j) {
+        //  delay(10);
+        adxl.readAccel(&dummy.x, &dummy.y, &dummy.z);
+        Serial.write((unsigned char) '#');
+        adtomatlab(Serial, dummy);
+        Serial.println();
+        //}
+    }
+
+    /*
+    // Read the accelerometer and record the data in the arrays.
+    adxl.readAccel(&x, &y, &z);
+    x_accelerometer[accel_reading] = x;
+    y_accelerometer[accel_reading] = y;
+    z_accelerometer[accel_reading] = z;
+
+    // Note that accel_reading should never be at or above the maximum value of SIZE.
+    // Otherwise, we might run into an out-of-bounds error.
+    accel_reading++;
+    if (accel_reading >= SIZE) {
+        accel_reading = 0;
+    }
+    */
+    /*
+        for (unsigned int index = 0; a < sizeof(x_accelerometer);
+             index++) { // sizeof(x_accelerometer) or accel_reading --- which would be better
+            accelX  = x_accelerometer[index];
+            accelY  = y_accelerometer[index];
+            accelZ  = z_accelerometer[index];
+            energyX = pow(accelX, 2.0); // forgot times (t)time
+            energyY = pow(accelY, 2.0); // should the time be based on the internal clock?
+            energyZ = pow(accelZ, 2.0); // we can I look for finding code to interact with the microprocessor
+        }
+    */
 }
 
 void test_accel(void) {
