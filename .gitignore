@@ -7,3 +7,4 @@
 .vscode/settings.json
 *.asv
 *.code-workspace
+src/interpreter/ISR Testing/int_to_lora.csv
