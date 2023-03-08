@@ -10,6 +10,7 @@
 void isr();
 
 // Available test functions:
+void test_wake(void);
 void test_detection(void);
 void test_accel(void);
 void test_power(void);

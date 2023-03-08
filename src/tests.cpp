@@ -30,6 +30,114 @@ void isr() {
     motionDetected = true;
 }
 
+void test_wake(void) {
+
+    MonitoringNodeData mnd_test;
+    ADXL345 adxl = ADXL345(1);
+    int x, y, z;
+
+    pinMode(7, INPUT);
+    pinMode(PIN_STATUSLED, OUTPUT);
+    indicateOff();
+
+    Serial.begin(SERIALBAUD);
+    while (!Serial && millis() < SERIALTIMEOUT)
+        yield();
+    Serial.println(F("Notice: Serial Interface Connected!"));
+
+    LoRa.begin(LoRaChannelsUS[1]);
+    LoRa.setSpreadingFactor(SPREADFACTOR);
+    LoRa.setSignalBandwidth(CHIRPBW);
+    LoRa.setSyncWord(SYNCWORD);
+    LoRa.setPreambleLength(PREAMBLELEN);
+    LoRa.enableCrc();
+
+    LoRa.setTxPower(15, PA_OUTPUT_PA_BOOST_PIN);
+
+    mnd_test.ID     = 0x99;
+    mnd_test.status = 0b00000000;
+    mnd_test.upTime = millis();
+    mnd_test.bat    = analogRead(PIN_BATADC);
+
+    // ADXL345 setup
+    adxl.powerOn();
+    adxl.setSpiBit(0); // 4-Wire SPI
+    adxl.setRangeSetting(2);
+
+    adxl.setFullResBit(1);
+    adxl.set_bw(ADXL345_BW_50);
+    // adxl.setRate(); // i2c method?
+
+    adxl.setInterruptLevelBit(0); // means the pin RISES on interrupt
+
+    adxl.setInterrupt(ADXL345_DATA_READY, true);
+    adxl.setInterruptMapping(ADXL345_DATA_READY, ADXL345_INT1_PIN);
+
+    adxl.setActivityAc(1);         // AC coupled activitiy
+    adxl.setActivityXYZ(1, 1, 1);  // Set to activate movement detection in the axes (1 == ON, 0 == OFF)
+    adxl.setActivityThreshold(25); // 62.5mg per increment   // Set activity   // Inactivity thresholds (0-255)
+    adxl.ActivityINT(1);
+    adxl.setInterruptMapping(ADXL345_ACTIVITY, ADXL345_INT2_PIN);
+    // ADXL345_FIFO_STATUS; // can we change?
+
+    adxl.InactivityINT(0);
+    adxl.ActivityINT(1);
+    adxl.FreeFallINT(0);
+    adxl.doubleTapINT(0);
+    adxl.singleTapINT(0);
+    adxl.setInterruptMapping(ADXL345_OVERRUNY, ADXL345_INT1_PIN);
+    adxl.setInterruptMapping(ADXL345_WATERMARK, ADXL345_INT1_PIN);
+
+    Serial.println("ADXL REGISTER STATUS AFTER SETUP:");
+    adxl.printAllRegister();
+
+    noInterrupts();
+
+    LowPower.attachInterruptWakeup(
+        7, []() -> void {}, RISING);
+
+    attachInterrupt(7, isr, RISING);
+
+    delay(1000); // needs some time to boot? determine empirically please
+
+    while (digitalRead(7)) {
+        adxl.getInterruptSource();
+        adxl.readAccel(&x, &y, &z); // clears interrupt if present, clear FIFO
+    }
+
+    Serial.println(F("Interrupt Attached!"));
+    Serial.end(); //:(
+
+    interrupts();
+    AccelData dummy;
+
+    for (;;) {
+        LoRa.sleep();
+        LowPower.deepSleep();
+        // execution resumes after waking up:
+
+        indicateOn();
+        if (motionDetected) {
+
+            motionDetected = false;
+
+            byte whichInterrupt = adxl.getInterruptSource();
+
+            adxl.readAccel(&dummy.x, &dummy.y, &dummy.z);
+
+            LoRa.beginPacket();
+            LoRa.write((uint8_t *) &mnd_test, sizeof(MonitoringNodeData));
+            LoRa.endPacket(false);
+            indicateOff();
+
+            // dont resend too fast
+            while (digitalRead(7)) {
+                adxl.getInterruptSource();
+                delay(10);
+            }
+        }
+    }
+}
 void test_detection(void) {
 
 #define SIZE           1000 // The number of accelerometer readings to hold
