@@ -217,6 +217,7 @@ void test_detection(void) {
 
         while (!motionDetected)
             ; // stall to simulate sleeping
+        indicateOn();
         motionDetected = false;
 
         byte whichInterrupt = adxl.getInterruptSource();
@@ -228,6 +229,7 @@ void test_detection(void) {
         adtomatlab(Serial, dummy);
         Serial.println();
         //}
+        indicateOff();
     }
 
     /*
@@ -305,7 +307,6 @@ void test_accel(void) {
         i++;
     }
 }
-
 void test_stream(void) {
 
     ADXL345 adxl = ADXL345(1); // CS pin is pin 1
@@ -341,7 +342,6 @@ void test_stream(void) {
         Serial.println();
     }
 }
-
 void adtomatlab(Serial_ &s, const AccelData d) {
     for (int nb = 0; nb < sizeof(AccelData); ++nb)
         s.write((unsigned char) ((uint8_t *) &d)[nb]);
@@ -418,10 +418,8 @@ void test_isr2(void) {
 }
 
 void test_russey_mobile(void) {
-#define PIN_INCREMENT_PANEL A6
-#define PIN_SAMPLE_PANEL    A5
-#define DEBOUNCERINO        200
-#define SAMPLES_PER_PUSH    5
+#define PIN_SAMPLE_INCREMENT A6
+#define SAMPLES_PER_PUSH     3
 
     RTCZero rtc;
     MonitoringNodeData mnd;
@@ -434,26 +432,23 @@ void test_russey_mobile(void) {
     pinMode(PIN_LORAMODE, INPUT_PULLUP);
     pinMode(PIN_STATUSLED, OUTPUT);
     pinMode(PIN_ERRORLED, OUTPUT);
-    pinMode(PIN_INCREMENT_PANEL, INPUT_PULLUP);
-    pinMode(PIN_SAMPLE_PANEL, INPUT_PULLUP);
+    pinMode(PIN_SAMPLE_INCREMENT, INPUT_PULLUP);
 
-    long freq = LoRaChannelsUS[63];
+    long freq = LoRaChannelsUS[1];
 
     indicateOn();
     if (!LoRa.begin(freq)) {
-        Serial.println("LORA BAD");
+        // Serial.println("LORA BAD");
         while (1)
             ;
     }
-    Serial.println("LORA ONLINE");
+    // Serial.println("LORA ONLINE");
 
     LoRa.setSpreadingFactor(SPREADFACTOR);
     LoRa.setSignalBandwidth(CHIRPBW);
     LoRa.setSyncWord(SYNCWORD);
     LoRa.setPreambleLength(PREAMBLELEN);
-    // default 17 is very powerful, trips OCP sometimes. minimum 2
-    LoRa.setTxPower(15, PA_OUTPUT_PA_BOOST_PIN);
-    LoRa.enableCrc();
+    LoRa.disableCrc();
     mnd.ID   = 0x99;
     mnd.freq = freq;
 
@@ -463,43 +458,36 @@ void test_russey_mobile(void) {
     mnd.timeOnAir      = 0;
 
     mnd.status = 0b00000000;
+    indicateOff();
 
     for (;;) {
 
-        while (!digitalRead(PIN_SAMPLE_PANEL))
+        while (!digitalRead(PIN_SAMPLE_INCREMENT))
             ;
-        while (digitalRead(PIN_SAMPLE_PANEL)) {
-            if (!digitalRead(PIN_INCREMENT_PANEL)) {
-                mnd.status += 1;
-                Serial.print(F("Incremented Panel, i = "));
-                Serial.println(mnd.status);
-                delay(DEBOUNCERINO);
-                while (!digitalRead(PIN_INCREMENT_PANEL))
-                    ;
+        while (digitalRead(PIN_SAMPLE_INCREMENT)) {
+            ;
+        }
+        indicateOn();
+        mnd.packetnum += 1;
+        for (int k = 0; k < SAMPLES_PER_PUSH; ++k) {
+            for (int tx = 2; tx <= 18; ++tx) {
+                tx = (tx >= 18 ? 20 : tx);
+                LoRa.setTxPower(tx, PA_OUTPUT_PA_BOOST_PIN);
+                mnd.status = tx;
+
+                LoRa.beginPacket();
+                LoRa.write((uint8_t *) &mnd, sizeof(MonitoringNodeData));
+                LoRa.endPacket(false);
+                delay(10);
             }
         }
-        for (int k = 0; k < SAMPLES_PER_PUSH; ++k) {
-            delay(100); // don't overwhelm silly little Matlab
-
-            mnd.upTime = millis();
-            mnd.epoch  = rtc.getEpoch();
-            mnd.bat    = analogRead(PIN_BATADC);
-
-            indicateOn();
-            mnd.packetnum += 1;
-            LoRa.beginPacket();
-            LoRa.write((uint8_t *) &mnd, sizeof(MonitoringNodeData));
-            LoRa.endPacket(false);
-            mnd.timeOnAir += getTOA(sizeof(MonitoringNodeData));
-            indicateOff();
-        }
-        Serial.println("Sent Sample :3");
-        delay(DEBOUNCERINO);
+        indicateOff();
+        Serial.println("Sent!");
     }
 }
 void test_russey_station(void) {
     MonitoringNodeData mndBuf;
-    long freq = LoRaChannelsUS[63];
+    long freq = LoRaChannelsUS[1];
     Serial.begin(SERIALBAUD);
     while (!Serial && millis() < SERIALTIMEOUT)
         yield();
@@ -517,7 +505,7 @@ void test_russey_station(void) {
     LoRa.setSignalBandwidth(CHIRPBW);
     LoRa.setSyncWord(SYNCWORD);
     LoRa.setPreambleLength(PREAMBLELEN);
-    LoRa.enableCrc();
+    LoRa.disableCrc();
 
     for (;;) {
         indicateOff();
@@ -547,8 +535,9 @@ void frssitomatlab(Serial_ &s, const MonitoringNodeData d, const ReceiverExtras 
 
     static TestPing p;
 
-    p.panelNum = d.status;
+    p.panelNum = d.packetnum;
     p.rssi     = r.rssi;
+    p.txpow    = d.status;
     p.snr      = r.snr;
 
     // Serial.print("status");

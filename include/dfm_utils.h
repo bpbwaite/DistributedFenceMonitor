@@ -25,6 +25,7 @@ typedef struct {
 typedef struct {
     int32_t panelNum;
     int32_t rssi;
+    int32_t txpow;
     float snr;
 
 } TestPing;
