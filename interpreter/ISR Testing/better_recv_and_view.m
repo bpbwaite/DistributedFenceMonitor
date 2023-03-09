@@ -70,7 +70,7 @@ while 1
         databuf.y(n) = read(s, 1, "int32");
         databuf.z(n) = read(s, 1, "int32");
  
-        if ~mod(n, Fs/10) % show at frequency
+        if ~mod(n, Fs/5) % show at frequency
             xlower = max(0, n/Fs - t_window);
             xupper = max(t_window, n/Fs);
             X = (1:length(databuf.x))./Fs;
