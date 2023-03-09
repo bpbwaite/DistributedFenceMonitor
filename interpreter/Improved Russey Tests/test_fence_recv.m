@@ -19,7 +19,7 @@ baud = 115200; % bps
 timeout = 120; % s
 
 %% Connection
-spla = "COM5";
+spla = "COM15";
 s = serialport(spla, 115200);
 s.Timeout = timeout;
     
@@ -44,8 +44,8 @@ while 1
         % terminator
         newl = read(s, 2, "uint8");
         
-        fprintf("RECV%d: %d dB at Panel %d when TX= %d\n",...
-            n,databuf.rssi(n), databuf.panel(n), databuf.tx(n))
+        fprintf("RECV%d: %d dBm at Panel %d when TX= %d\n",...
+            n, databuf.rssi(n), databuf.panel(n), databuf.tx(n))
         
         n = n+1;
        
