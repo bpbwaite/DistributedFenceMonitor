@@ -63,6 +63,20 @@ typedef struct {
 
 } MonitoringNodeData;
 
+typedef struct {
+    // Version of MonitoringNodeData that stores
+    // Information in as few bits as possible
+    uint32_t packetnum;
+    uint32_t upTime;
+    uint32_t epoch;
+    uint32_t all_states;
+    uint16_t ID;
+    uint16_t reserved;
+    // syncword is already known by receiver by nature of having received the packet
+    // freq is already known by receiver by nature of having received the packet
+    // timeOnAir can be computed by the receiver
+} MND_Compact;
+
 const long LoRaChannelsUS[] = {
     902300000, 902500000, 902700000, 902900000, 903100000, 903300000, 903500000, 903700000, 903900000, 904100000,
     904300000, 904500000, 904700000, 904900000, 905100000, 905300000, 905500000, 905700000, 905900000, 906100000,
