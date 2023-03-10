@@ -2,7 +2,7 @@
 %  FILE: Better Fence Test Viewer
 %  VERSION: 1.0.0
 %  TEST DATE: 9 March 2023
-%  DATE: 8 March 2023
+%  DATE: 9 March 2023
 %  PROJECT: Distributed Fence Monitor Capstone
 %  AUTHORS: Briellyn Braithwaite
 %  DESCRIPTION:
@@ -21,6 +21,7 @@ databuf.panel = databuf.panel - 3;
 samples = 3; % at each TX power
 distance_between_panels = 2.67/2; % meters
 No_Signal = -120; % dB
+
 %% Plot: Link Margin
 
 figure;
@@ -41,12 +42,12 @@ for t=all_tx
     plot(distance_between_panels * panels_at_tx + t*.05,...
         -1*No_Signal + rssi_at_tx, 'o', 'Color', [t/18 1-t/18 0]);
 end
-title('Signal Strength vs. Distance')
+title('Signal Margin vs. Distance')
 subtitle(['Configuration: Ch.1 on SF7BW125, ', num2str(samples), ' Samples'])
 xlabel('Distance Between Transceivers (m)')
 ylabel('Link Margin (dB)')
 xlim([-1 55])
-ylim([1 120])
+ylim([0 75])
 %set(gca,'YScale','log')
 %yticks(0:10:120)
 lgd = legend();
@@ -77,7 +78,7 @@ for t=all_tx
     rssi_at_tx = databuf.rssi(databuf.tx == tx_to_plot);
 
     plot(distance_between_panels * panels_at_tx + t*.05,...
-        10.^(rssi_at_tx/10), 'o', 'Color', [t/18 1-t/18 0]);
+        10.^(rssi_at_tx/10), '*', 'Color', [t/18 1-t/18 0], 'linewidth',2);
 end
 
 title('Signal Power vs. Distance')
@@ -153,3 +154,46 @@ for L = 1:length(all_tx)
 end
 title(lgd,'Transmit Power');
 drawnow
+
+
+%% Mesh Plot
+% reduce rssi datapoints to mean rssi only
+% must be divisible by samples (no missed data)
+h=figure;
+
+n = 1;
+R = [];
+
+for d = min(databuf.panel): max(databuf.panel)
+    for t = 1:17 % maps onto 2-17, 20
+        x = t+1;
+        if(x == 18)
+            x = 20;
+        end
+        R(t, d+1) = mean(databuf.rssi(databuf.panel == d & databuf.tx == x));
+        n = n + 1;
+    end
+end
+
+
+[D, T] = meshgrid(min(databuf.panel):max(databuf.panel), power_draw(1:17));
+CO(:,:,1) = T/500; % red
+CO(:,:,2) = (120+R)/70; % green
+CO(:,:,3) = 1-(120+R)/70; % blue
+mesh(D*distance_between_panels, T, R, CO, 'FaceAlpha','0.9', 'FaceColor', 'flat')
+
+view(45, 30);
+title('RSSI vs. Distance and TX Power')
+hxl = xlabel('Distance Between Transceivers (m)',...
+    'Rotation', -20, 'HorizontalAlignment', 'center');
+xlim([0, 60])
+xticks(0:5:60)
+hyl = ylabel('TX Power (mW)', 'Rotation', 20, 'HorizontalAlignment', 'center');
+ylim([0, 600])
+yticks(0:50:600)
+hzl = zlabel('RSSI (dBm)');
+zlim([-120, -50])
+zticks(-120:10:-50)
+
+hxl.Position = [30 -75 -125];
+hyl.Position = [67.5 300 -125];
