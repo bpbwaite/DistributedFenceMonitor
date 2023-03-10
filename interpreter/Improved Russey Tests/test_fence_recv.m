@@ -19,8 +19,8 @@ baud = 115200; % bps
 timeout = 120; % s
 
 %% Connection
-spla = "COM15";
-s = serialport(spla, 115200);
+
+s = serialport(serialportlist', 115200);
 s.Timeout = timeout;
     
 disp("Setup complete!")
@@ -52,5 +52,5 @@ while 1
         
 end
 %% CTRL-C to break from data collection
-save('fence_N.mat', 'databuf');
+%%save('fence_Braithwaite.mat', 'databuf');
 
