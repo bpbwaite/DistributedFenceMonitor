@@ -11,14 +11,13 @@
 
 #include <ArduinoECCX08.h>
 #include <ArduinoLowPower.h>
+#include <Arduino_PMIC.h>
 #include <LoRa.h>
 #include <RTCZero.h>
 
 #include <SparkFun_ADXL345.h>
+#include <SD.h>
 
-#if !defined(CENTRAL_NODE)
-#include <Arduino_PMIC.h>
-#endif
 // global variables accessed in ISRs:
 volatile bool motionDetected = false;
 
@@ -28,6 +27,99 @@ AccelData accelData;
 // Interrupt Service Routines:
 void isr() {
     motionDetected = true;
+}
+void test_log_bat_SD(void) {
+    SdFile root;
+    File dataLog;
+    RTCZero rtc;
+
+    MND_Compact mnd_test;
+
+    const int chipSelect = 4;
+    arduino::pinMode(chipSelect, OUTPUT);
+    arduino::pinMode(PIN_STATUSLED, OUTPUT);
+    indicateOff();
+
+    rtc.begin();
+    rtc.setEpoch(COMPILE_TIME);
+    rtc.disableAlarm();
+
+    PMIC.begin();
+
+    LoRa.begin(LoRaChannelsUS[1]);
+    LoRa.setSpreadingFactor(SPREADFACTOR);
+    LoRa.setSignalBandwidth(CHIRPBW);
+    LoRa.setSyncWord(SYNCWORD);
+    LoRa.setPreambleLength(PREAMBLELEN);
+    LoRa.setTxPower(3, PA_OUTPUT_PA_BOOST_PIN);
+    LoRa.disableCrc();
+
+    mnd_test.ID         = 0x99;
+    mnd_test.all_states = 0;
+    mnd_test.upTime     = millis();
+
+    Serial.begin(SERIALBAUD);
+    while (!Serial && millis() < SERIALTIMEOUT)
+        yield();
+    Serial.println(F("Notice: Serial Interface Connected!"));
+
+    if (!SD.begin(chipSelect)) {
+        Serial.println("NO CARD?");
+    }
+    String fileToOpen;
+    int file_name_iterator = 1;
+    char strbuf[24];
+    while (1) {
+        fileToOpen = "log";
+        fileToOpen += rtc.getMonth();
+        fileToOpen += rtc.getDay();
+        fileToOpen += "_";
+        fileToOpen += (file_name_iterator);
+        fileToOpen += ".txt";
+        strcpy(strbuf, fileToOpen.c_str());
+        if (!SD.exists(strbuf))
+            break;
+        file_name_iterator++;
+    }
+    dataLog = SD.open(fileToOpen.c_str(), FILE_WRITE);
+
+    if (!dataLog) {
+        Serial.print(F("Error opening log file: \""));
+        Serial.print(fileToOpen);
+        Serial.print("\".");
+        Serial.println();
+    }
+    Serial.print(PMIC.isBattConnected());
+    Serial.print(PMIC.isPowerGood());
+    Serial.print(PMIC.isHot());
+    Serial.println("Entering loop,");
+    Serial.println("Goodbye");
+    // SPI.usingInterrupt(digitalPinToInterrupt(RTC_ALARM_WAKEUP));
+    // SPI.usingInterrupt(digitalPinToInterrupt(LORA_IRQ));
+    USBDevice.detach();
+
+    int n = 1;
+    while (1) {
+        LoRa.sleep();
+        indicateOff();
+        LowPower.deepSleep(15000);
+        indicateOn();
+        n++;
+
+        String dataToWrite = "";
+        dataToWrite += n;
+        dataToWrite += ",";
+        dataToWrite += rtc.getEpoch();
+        dataToWrite += ",";
+        dataToWrite += analogRead(PIN_BATADC);
+
+        dataLog.println(dataToWrite);
+        dataLog.flush();
+
+        LoRa.beginPacket();
+        LoRa.write((uint8_t *) &mnd_test, sizeof(MND_Compact));
+        LoRa.endPacket(false);
+    }
 }
 
 void test_wake(void) {
