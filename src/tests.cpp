@@ -232,8 +232,11 @@ void test_wake(void) {
 }
 void test_detection(void) {
 
-#define SIZE           1000 // The number of accelerometer readings to hold
-#define DEFAULT_THRESH 75
+#define SIZE         1000 // The number of accelerometer readings to hold
+#define THRESHOLD_X1 75   // First Threshold for the X-axis
+#define THRESHOLD_Y1 75   // First Threshold for the Y-axis
+#define THRESHOLD_Z1 75   // First Threshold for the Z-axis
+
     int x_accelerometer[SIZE]; // Data from the accelerometer's x-axis
     int y_accelerometer[SIZE]; // Data from the accelerometer's y-axis
     int z_accelerometer[SIZE]; // Data from the accelerometer's z-axis
@@ -242,16 +245,32 @@ void test_detection(void) {
     int x, y, z;
     // variable delcaration
     int accelX, accelY, accelZ;
-    int thresholdX = DEFAULT_THRESH;
-    int thresholdY = DEFAULT_THRESH;
-    int thresholdZ = DEFAULT_THRESH;
-    double energyX, energyY, energyZ;
-    int abvThreshX = 0;
-    int abvThreshY = 0;
-    int abvThreshZ = 0;
-    int blwThreshX = 0;
-    int blwThreshY = 0;
-    int blwThreshZ = 0;
+    int thresholdX = THRESHOLD_X1;
+    int thresholdY = THRESHOLD_Y1;
+    int thresholdZ = THRESHOLD_Z1;
+    double energyX[SIZE]; // Energy array will contain the instantaneous energy
+    double energyY[SIZE]; // calucated from the acceleration and an [unset time]
+    double energyZ[SIZE];
+    int abvThreshX[SIZE]; // Above and Below thresh will contain the indicies
+    int abvThreshY[SIZE]; // of when the elements from energy is
+    int abvThreshZ[SIZE]; // above or below the threshold
+    int blwThreshX[SIZE];
+    int blwThreshY[SIZE];
+    int blwThreshZ[SIZE];
+    // counters for abv & blw thresh
+    int abvCountX = 0;
+    int abvCountY = 0;
+    int abvCountZ = 0;
+    int blwCountX = 0;
+    int blwCountY = 0;
+    int blwCountZ = 0;
+    // included for now if we actually want to separate the energy array with abthresh and blwthresh
+    double FenceTouchedX[SIZE];
+    double FenceTouchedY[SIZE];
+    double FenceTouchedZ[SIZE];
+    double FenceUntouchedX[SIZE];
+    double FenceUntouchedY[SIZE];
+    double FenceUntouchedZ[SIZE];
 
     MonitoringNodeData mnd_test;
     ADXL345 adxl = ADXL345(1);
@@ -324,31 +343,58 @@ void test_detection(void) {
         indicateOff();
     }
 
+    // old code recongifured
     /*
-    // Read the accelerometer and record the data in the arrays.
-    adxl.readAccel(&x, &y, &z);
-    x_accelerometer[accel_reading] = x;
-    y_accelerometer[accel_reading] = y;
-    z_accelerometer[accel_reading] = z;
+        currently doesn't work until:
+        - accelXYZ is fixed
+        - time is added for the energy calculation
 
-    // Note that accel_reading should never be at or above the maximum value of SIZE.
-    // Otherwise, we might run into an out-of-bounds error.
-    accel_reading++;
-    if (accel_reading >= SIZE) {
-        accel_reading = 0;
-    }
+        x_accelerometer[accel_reading] = x;
+        y_accelerometer[accel_reading] = y; // a version similar to this is needed for the code to function
+        z_accelerometer[accel_reading] = z;
+
     */
-    /*
-        for (unsigned int index = 0; a < sizeof(x_accelerometer);
-             index++) { // sizeof(x_accelerometer) or accel_reading --- which would be better
-            accelX  = x_accelerometer[index];
-            accelY  = y_accelerometer[index];
-            accelZ  = z_accelerometer[index];
-            energyX = pow(accelX, 2.0); // forgot times (t)time
-            energyY = pow(accelY, 2.0); // should the time be based on the internal clock?
-            energyZ = pow(accelZ, 2.0); // we can I look for finding code to interact with the microprocessor
+
+    for (unsigned int index = 0; index < sizeof(x_accelerometer); index++) {
+        // accelX  = x_accelerometer[index];
+        // accelY  = y_accelerometer[index];
+        // accelZ  = z_accelerometer[index];
+        energyX[index] = pow(accelX, 2.0); // still without time (t)time not sure how to add
+        energyY[index] = pow(accelY, 2.0);
+        energyZ[index] = pow(accelZ, 2.0);
+
+        // same comparison test but with the added arraies
+        if (energyX[index] > thresholdX) {
+            FenceTouchedX[index]  = energyX[index];
+            abvThreshX[abvCountX] = index;
+            abvCountX++;
         }
-    */
+        else {
+            FenceUntouchedX[index] = energyX[index];
+            blwThreshX[blwCountX]  = index;
+            blwCountX++;
+        }
+        if (energyY[index] > thresholdY) {
+            FenceTouchedY[index]  = energyY[index];
+            abvThreshY[abvCountY] = index;
+            abvCountY++;
+        }
+        else {
+            FenceUntouchedY[index] = energyY[index];
+            blwThreshY[blwCountY]  = index;
+            blwCountY++;
+        }
+        if (energyZ[index] > thresholdZ) {
+            FenceTouchedZ[index]  = energyZ[index];
+            abvThreshZ[abvCountZ] = index;
+            abvCountZ++;
+        }
+        else {
+            FenceUntouchedZ[index] = energyZ[index];
+            blwThreshZ[blwCountZ]  = index;
+            blwCountZ++;
+        }
+    }
 }
 
 void test_accel(void) {
