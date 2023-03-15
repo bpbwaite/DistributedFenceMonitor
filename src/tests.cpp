@@ -124,11 +124,11 @@ void test_log_bat_SD(void) {
 
 void test_wake(void) {
 
-    MonitoringNodeData mnd_test;
-    ADXL345 adxl = ADXL345(1);
-    int x, y, z;
+    MonitoringNodeData mnd_test; // object of type MonitoringNodeData
+    ADXL345 adxl = ADXL345(1);   // create an ADXL345 object and set the SPI Chip Select to 1
+    int x, y, z;                 // variables to hold the x, y, and z axis values
 
-    pinMode(7, INPUT);
+    pinMode(7, INPUT); // Interrupt pin
     pinMode(PIN_STATUSLED, OUTPUT);
     indicateOff();
 
@@ -186,20 +186,21 @@ void test_wake(void) {
     noInterrupts();
 
     LowPower.attachInterruptWakeup(
-        7, []() -> void {}, RISING);
+        7, []() -> void {}, RISING); // wake up on pin 7 rising edge
 
-    attachInterrupt(7, isr, RISING);
+    attachInterrupt(7, isr, RISING); // attach interrupt to pin 7 and sets handler of isr to the function named isr
 
     delay(1000); // needs some time to boot? determine empirically please
 
+    // while pin 7 is reading high, read the accelerometer and clear the interrupt
     while (digitalRead(7)) {
         adxl.getInterruptSource();
         adxl.readAccel(&x, &y, &z); // clears interrupt if present, clear FIFO
     }
 
     Serial.println(F("Interrupt Attached!"));
-    Serial.end(); //:(
-
+    Serial.end(); // :(
+    USBDevice.detach();
     interrupts();
     AccelData dummy;
 
@@ -209,20 +210,21 @@ void test_wake(void) {
         // execution resumes after waking up:
 
         indicateOn();
+        // if no motion detected, this will be skipped. If motion detected, this will be executed
         if (motionDetected) {
 
             motionDetected = false;
 
-            byte whichInterrupt = adxl.getInterruptSource();
+            byte whichInterrupt = adxl.getInterruptSource(); // clears interrupt if present, clear FIFO
 
             adxl.readAccel(&dummy.x, &dummy.y, &dummy.z);
 
-            LoRa.beginPacket();
+            LoRa.beginPacket(); // this wakes up the module and transmits the data
             LoRa.write((uint8_t *) &mnd_test, sizeof(MonitoringNodeData));
             LoRa.endPacket(false);
             indicateOff();
 
-            // dont resend too fast
+            // dont go to sleep until the pin 7 has settled to low
             while (digitalRead(7)) {
                 adxl.getInterruptSource();
                 delay(10);

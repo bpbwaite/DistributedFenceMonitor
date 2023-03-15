@@ -66,12 +66,12 @@ typedef struct {
 typedef struct {
     // Version of MonitoringNodeData that stores
     // Information in as few bits as possible
-    uint32_t packetnum;
-    uint32_t upTime;
-    uint32_t epoch;
-    uint32_t all_states;
-    uint16_t ID;
-    uint16_t reserved;
+    uint32_t packetnum;  // 32 bits for packet number that increments with each transmission
+    uint32_t upTime;     // 32 bits for uptime in milliseconds
+    uint32_t epoch;      // 32 bits for global time since 1970
+    uint32_t all_states; // 32 bits for all states
+    uint16_t ID;         // 16 bits for ID of each node indicating which node it is
+    uint16_t reserved;   // 16 bits for future use
     // syncword is already known by receiver by nature of having received the packet
     // freq is already known by receiver by nature of having received the packet
     // timeOnAir can be computed by the receiver
