@@ -26,7 +26,7 @@ AccelData accelData;
 
 // Interrupt Service Routines:
 void isr() {
-    motionDetected = true;
+    motionDetected = true; // global variable
 }
 void test_log_bat_SD(void) {
     SdFile root;
