@@ -1,7 +1,7 @@
 /*
   FILE: DFM_MKR1310.H
-  VERSION: 0.2.1
-  DATE: 10 February 2023
+  VERSION: 0.3.0
+  DATE: 18 March 2023
   PROJECT: Distributed Fence Monitor Capstone
   AUTHORS: Briellyn Braithwaite, Jack Ramsay
   DESCRIPTION: MKR1310 Boards Configuration Defines
@@ -18,13 +18,17 @@
 #define PIN_STATUSLED 6
 #define PIN_ERRORLED  3
 #define PIN_BATADC    A1 // not to be confused with ADC_BATTERY
-#define PIN_ADXLCS    1  // chipselect pin for the accelerometer
+
+#define PIN_ADXLCS    1  // legacy chipselect pin for the accelerometer
+#define PIN_ADXLCS1   A3 // chipselect pin for the primary accelerometer
+#define PIN_ADXLCS2   A4 // chipselect pin for the secondary accelerometer
+#define PIN_INTERRUPT 7
 
 #define DEBUG         true
 #define SERIALBAUD    115200
 #define SERIALTIMEOUT 10000
 // the following settings must match on the sender and receiver
-#define USING_CRC true
+#define USING_CRC false
 #define GMTOFFSET -25200
 
 #define NUMCHANNELS_US 64
@@ -42,7 +46,7 @@
 #define REGION_TAG  915    // 915 for US, 868 for EU
 #define SYNCWORD    0x0012 // default is 0x12, 0x34 is reserved for public communications. 2 bytes
 #define PREAMBLELEN 8      // 6-65535, default 8. symbols of 8 bits each
-#define CRCLEN      2      // bytes
+#define CRCLEN      2      // bytes of CRC
 #define CODERATE    5      // represents 4/5
 
 #define RECEIVER_GAINMODE 0 // Range 1-6. 0 is automatic. Applies to receiver only
