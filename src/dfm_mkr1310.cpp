@@ -35,9 +35,10 @@ RTCZero rtc;
 MonitoringNodeData mnd;
 
 void setup_mkr1310() {
-
-    test_russey_mobile();
-    // test_detection();
+    test_stream();
+    // test_wake();
+    // test_russey_mobile();
+    //  test_detection();
 
     rtc.begin();
 #if defined(SET_RTC)

@@ -15,11 +15,12 @@
 #include <LoRa.h>
 #include <RTCZero.h>
 
-#include <SparkFun_ADXL345.h>
 #include <SD.h>
+#include <SparkFun_ADXL345.h>
 
 // global variables accessed in ISRs:
 volatile bool motionDetected = false;
+volatile bool data_ready     = false;
 
 // global variables and objects
 AccelData accelData;
@@ -27,6 +28,16 @@ AccelData accelData;
 // Interrupt Service Routines:
 void isr() {
     motionDetected = true; // global variable
+}
+void test_errors(void) {
+    pinMode(6, OUTPUT);
+    pinMode(3, OUTPUT);
+
+    for (;;) {
+        delay(300);
+        digitalWrite(3, !digitalRead(3));
+        digitalWrite(6, !digitalRead(6));
+    }
 }
 void test_log_bat_SD(void) {
     SdFile root;
@@ -121,7 +132,80 @@ void test_log_bat_SD(void) {
         LoRa.endPacket(false);
     }
 }
+void test_threshes(void) {
 
+#define TESTTHRESH 2
+
+    MonitoringNodeData mnd_test; // object of type MonitoringNodeData
+    ADXL345 adxl = ADXL345(1);   // create an ADXL345 object and set the SPI Chip Select to 1
+    int x, y, z;                 // variables to hold the x, y, and z axis values
+
+    pinMode(7, INPUT);
+    pinMode(A6, INPUT);
+    pinMode(PIN_STATUSLED, OUTPUT);
+    indicateOff();
+
+    // ADXL345 setup
+    adxl.powerOn();
+    adxl.setSpiBit(0); // 4-Wire SPI
+    adxl.setRangeSetting(2);
+
+    adxl.setFullResBit(1);
+    adxl.set_bw(ADXL345_BW_50);
+    // adxl.setRate(); // i2c method?
+
+    adxl.setInterruptLevelBit(0); // means the pin RISES on interrupt
+
+    adxl.setInterrupt(ADXL345_DATA_READY, false);
+    adxl.setInterruptMapping(ADXL345_DATA_READY, ADXL345_INT1_PIN);
+
+    adxl.setActivityAc(1);                 // AC coupled activitiy
+    adxl.setActivityXYZ(1, 1, 1);          // Set to activate movement detection in the axes (1 == ON, 0 == OFF)
+    adxl.setActivityThreshold(TESTTHRESH); // 62.5mg per increment
+    adxl.setInterruptMapping(ADXL345_ACTIVITY, ADXL345_INT1_PIN);
+
+    adxl.setInactivityAc(1);
+    adxl.setInactivityXYZ(1, 1, 1);
+    adxl.setInactivityThreshold(TESTTHRESH); // 62.5mg per increment
+    adxl.InactivityINT(1);
+    adxl.setTimeInactivity(1);
+    adxl.setInterruptMapping(ADXL345_INACTIVITY, ADXL345_INT2_PIN);
+
+    adxl.InactivityINT(1);
+    adxl.ActivityINT(1);
+    adxl.FreeFallINT(0);
+    adxl.doubleTapINT(0);
+    adxl.singleTapINT(0);
+
+    // disable FIFO-related interrupts
+    adxl.setInterrupt(ADXL345_OVERRUNY, false);
+    adxl.setInterrupt(ADXL345_WATERMARK, false);
+    adxl.setInterruptMapping(ADXL345_OVERRUNY, ADXL345_INT1_PIN);
+    adxl.setInterruptMapping(ADXL345_WATERMARK, ADXL345_INT1_PIN);
+
+    if (Serial)
+        Serial.end();
+    USBDevice.detach();
+
+    AccelData dummy;
+
+    bool isActive = false;
+    for (;;) {
+        if (isActive)
+            indicateOn();
+        else
+            indicateOff();
+
+        if (digitalRead(A6)) { // activity pin
+            isActive            = true;
+            byte whichInterrupt = adxl.getInterruptSource(); // clear interrupt
+        }
+        if (digitalRead(7)) { // inactivity pin
+            isActive            = false;
+            byte whichInterrupt = adxl.getInterruptSource(); // clear interrupt
+        }
+    }
+}
 void test_wake(void) {
 
     MonitoringNodeData mnd_test; // object of type MonitoringNodeData
@@ -398,7 +482,6 @@ void test_detection(void) {
         }
     }
 }
-
 void test_accel(void) {
     static int arrayx[10]; // entries for x;
     static int arrayy[10]; // entries for y;
@@ -449,37 +532,40 @@ void test_accel(void) {
 }
 void test_stream(void) {
 
-    ADXL345 adxl = ADXL345(1); // CS pin is pin 1
+    ADXL345 adxl = ADXL345(PIN_ADXLCS1); // CS pin is pin 1
 
     if (!Serial)
-        Serial.begin(115200);
+        Serial.begin(SERIALBAUD);
 
     adxl.powerOn();
     adxl.setSpiBit(0);
     adxl.setRangeSetting(2); // gs
-    // adxl.set_bw(ADXL345_BW_100);
-    // Serial.println(adxl.get_bw_code());
+    adxl.set_bw(ADXL345_BW_50);
     adxl.setInterrupt(ADXL345_DATA_READY, true);
-    adxl.setInterruptMapping(ADXL345_DATA_READY, ADXL345_INT2_PIN);
+    adxl.setInterruptMapping(ADXL345_DATA_READY, ADXL345_INT1_PIN);
 
-    //  delay(3000);
+    // adxl.setInterrupt(ADXL345_OVERRUNY, false);
+    // adxl.setInterrupt(ADXL345_WATERMARK, false);
 
-    accelData.x        = 0;
-    accelData.y        = 0;
-    accelData.z        = 0;
-    unsigned long toli = 0;
+    attachInterrupt(
+        digitalPinToInterrupt(PIN_INTERRUPT),
+        []() -> void {
+            data_ready = true;
+            ;
+        },
+        RISING);
+
+    if (digitalRead(PIN_INTERRUPT))
+        adxl.getInterruptSource();
 
     for (;;) {
-
-        while ((millis() - toli) <= ceil(1000 / 104))
-            ;
-
-        adxl.readAccel(&accelData.x, &accelData.y, &accelData.z);
-        toli = millis();
-
-        Serial.write((unsigned char) '#');
-        adtomatlab(Serial, accelData);
-        Serial.println();
+        if (data_ready) {
+            data_ready = false;
+            adxl.readAccel(&accelData.x, &accelData.y, &accelData.z);
+            Serial.write((unsigned char) '#');
+            adtomatlab(Serial, accelData);
+            Serial.println();
+        }
     }
 }
 void adtomatlab(Serial_ &s, const AccelData d) {
