@@ -21,8 +21,7 @@ timeout = 10; % s
 gmtoffset = -25200; % s
 
 %% Connection
-spla = "COM15";
-s = serialport(spla, 115200);
+s = serialport(serialportlist', 115200);
 s.Timeout = timeout;
     
 disp("Setup complete!")

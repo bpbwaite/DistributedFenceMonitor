@@ -1,18 +1,21 @@
 %/*
-%  FILE: .m
-%  VERSION: 1.0.0
+%  FILE: battery_viewer.m
+%  VERSION: 1.0.5
 %  TEST DATE: 10 March 2023
-%  DATE: 11 March 2023
+%  DATE: 19 March 2023
 %  PROJECT: Distributed Fence Monitor Capstone
 %  AUTHORS: Briellyn Braithwaite
 %  DESCRIPTION: 
 %*/
-% TESTS: LOG310_1: at TX 15 every 10 seconds for 46 ms, small packet.
-% Notes: Started at 4.13V, ended at 4.035.
+% TESTS: 
 % Confounds: extra time to write to SD card, ADC power
 
-% test LOG311_X: at TX 3 every 15 seconds for 46 ms, small packet.
-% Notes: Started at 4.13V, 7:37 pm 3/11/2023
+% LOG310_1: 2 day test. at TX 15 every 10 seconds for 46 ms.
+% Notes: Started at 4.13V, ended at 4.035. 
+
+% LOG311_1: week-long test. at TX 3 every 15 seconds for 46 ms.
+% Notes: Started at 4.13V, 7:37 pm 3/11/2023. Awake for 73ms.
+
 %% Setup
 clear
 close all
@@ -24,11 +27,14 @@ format compact
 
 %% Constants
 voltage_hundred = 4.2;
-voltage_zero = 3.2;
+voltage_zero = 3; 
+% PMIC demands the voltage ends at 3.2V
+% battery can go as low as 2.75V. must not discharge faster than 2 Hours
+
 R_vdiv_top = 330000; % voltage divider upper resistor
 R_vdiv_bottom = 680000; % voltage divider lower resistor
 ADC_Vref = 3.3;
-ADC_depth = 10; % see about turning up to 12 in the code
+ADC_depth = 10; % Code can set to 10 or 12
 
 %% Import Data
 opts = delimitedTextImportOptions("NumVariables", 4);
@@ -42,25 +48,41 @@ SD_data_1 = table2array(readtable("LOG310_1.TXT", opts));
 
 %% Conversion factors
 t_start = SD_data_1(1, 2);
-t = (SD_data_1(:, 2) - t_start) ./ 3600; % t in hours
+t = (SD_data_1(:, 2) - t_start) ;
+t = t ./ 3600; %./ 24; % t in hours
 
 v_at_adc = ADC_Vref * SD_data_1(:, 3) / (2^ADC_depth - 1);
-v_at_bat = v_at_adc * (R_vdiv_top + R_vdiv_bottom) / (R_vdiv_bottom);
-% cap to 100%
-for k=1:length(t)
-   v_at_bat(k) = min(voltage_hundred, v_at_bat(k));
-end
+v_at_bat = min(voltage_hundred, ...
+    v_at_adc * (R_vdiv_top + R_vdiv_bottom) / (R_vdiv_bottom));
+
+bat_percentage = 100*...
+    (v_at_bat-voltage_zero) / (voltage_hundred-voltage_zero);
+
+% take sample averages
+n = 7;
+Y = conv(bat_percentage, ones(1, n), 'valid');
+smoothened_bat = Y(1:n:end) ./ n;
+t = t(1:n:end);
+t = t(1:length(smoothened_bat));
+
 %% Plots
-bat_percentage = 100 * (v_at_bat - voltage_zero);
 
 figure,
 hold on 
 grid on
-plot(t, bat_percentage, 'b')
-xlabel('t (h)')
+
+plot(t, smoothened_bat, 'b')
+xlabel('t (hours)')
+xlim([0 240])
+xticks(0:12:t(end))
 ylabel('Battery Charge (%)')
+ylim([0 100])
+yticks(0:5:100)
 title('Long Term Power Test')
 
-tim = 0:250;
-plot(tim, -0.357*tim + 89.55, 'r-.', 'LineWidth', 2) % line of best fit
+% line of best fit
+plot(0:240, -0.357*(0:240) + 100, 'r-.', 'LineWidth', 2) 
+
+
+
 

@@ -1,13 +1,20 @@
+%/*
+%  FILE: Battery Life Computer
+%  VERSION: 1.0.0
+%  PROJECT: Distributed Fence Monitor Capstone
+%  AUTHORS: Briellyn Braithwaite
+%  DESCRIPTION: Preliminary tool for computing the battery life of
+%  different configurations based on estimates and heuristics
+%*/
 %% Battery Life
 % configuration
 format compact, format longg
 bat_capacity = 2000;    % mAh
-efficiency = 0.8;       % how much of the battery is usable
+efficiency = 0.85;       % how much of the battery is usable
 
 %% Draw in milliAmperes wrt 3.3v rail:
 % constants:
-draw_constant = 0.1;    % 0.1 to 0.5
-draw_constant = 18;    % if LED is ON
+draw_constant = 0.5;    % 0.1 to 0.5
 draw_other = 0.027;     % cryptochip, io, flash
 
 % draw_cpu: 4.6 to 5.7
@@ -30,6 +37,10 @@ draw_transmitter = 28;
 draw_cpu = 5.7;        
 draw_receiver = 20.0;   
 draw_transmitter = 128; 
+%% test values:
+draw_cpu = 5 + 8; % (Indicator LED turns on)        
+draw_receiver = 20;   
+draw_transmitter = 47; 
 
 %% Duty Cycles
 %% expected value:
@@ -44,14 +55,20 @@ dc_transmitter = 0;
 dc_cpu = 1;
 dc_receiver = 1;
 dc_transmitter = 0.10; % (legal limit in some places)
+%% test values:
+dc_cpu = 75e-3/15;
+dc_receiver = 0;
+dc_transmitter = 46e-3/15;
 
 %% Compute:
 current_draw = draw_constant + draw_other + ...
     draw_cpu*dc_cpu + draw_receiver*dc_receiver + draw_transmitter*dc_transmitter; 
+
 s = efficiency * bat_capacity / current_draw * 3600;
 time = sprintf('%01uh %02um %02us',...
     floor(s/60^2),...
     floor(s/60 - 60*floor(s/60^2)),... 
     floor(s - 3600*floor(s/60^2) - 60*floor(s/60 - 60*floor(s/60^2)))...
     );
-disp([time, '    (', num2str(s/(24*60*60)),'d)'])
+
+disp([time, '    (', num2str(s/(24*60*60), '%.1f'),'d)'])
