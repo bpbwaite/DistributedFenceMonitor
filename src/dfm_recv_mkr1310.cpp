@@ -32,8 +32,6 @@ volatile int interruptFlag = 0;
 
 void setup_recv_mkr1310() {
 
-    test_russey_station();
-
     rtc.begin();
 #if defined(SET_RTC)
     rtc.setEpoch(COMPILE_TIME);

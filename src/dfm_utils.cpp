@@ -19,6 +19,12 @@ void indicateOn() {
 void indicateOff() {
     digitalWrite(PIN_STATUSLED, LOW);
 }
+void errorOn() {
+    digitalWrite(PIN_ERRORLED, HIGH);
+}
+void errorOff() {
+    digitalWrite(PIN_ERRORLED, LOW);
+}
 uint8_t maxPayload(int region, int sf, long bw) {
     // get the max payload in bytes for different regions
     const uint8_t us_max_125[] = {242, 125, 53, 11, 0, 0};
