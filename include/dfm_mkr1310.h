@@ -18,6 +18,7 @@
 #define PIN_STATUSLED 6
 #define PIN_ERRORLED  3
 #define PIN_BATADC    A1 // not to be confused with ADC_BATTERY
+#define PIN_SW1       A5
 
 #define PIN_ADXLCS    1  // legacy chipselect pin for the accelerometer
 #define PIN_ADXLCS1   A3 // chipselect pin for the primary accelerometer

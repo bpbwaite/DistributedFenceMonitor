@@ -10,10 +10,9 @@
 
 %% Load Data & Setup
 cd(fileparts(matlab.desktop.editor.getActiveFilename)); % Set the working dir to dir of this file
-test_name = 'accel_3.mat';
+test_name = 'accel_8.mat';
 close all
 load(test_name)
-
 
 % ADXL configuration
 
@@ -51,24 +50,25 @@ bias = mean(z(dx_start:dx_end));
 
 figure, 
 grid off
-plot(t, z - bias, 'b');
+plot(t, abs(z - bias), 'b');
 
 xlabel('t (s)')
 ylabel('DC - Decoupled Accelerometer Signal (m/s^{2})')
 xlim([0 t(end)])
-ylim([-1*adxl_sens*g adxl_sens*g])
+ylim([-1 adxl_sens*g])
 xticks(0:1:ceil(t(end)))
-yticks(unique(sort([-2*g:(62.5*g/1000):2*g ])))
+yticks(unique(sort(round([0:(62.5*g/1000):2*g ], 1))))
 title('Activity Thresholds and Reference Signal', 'Interpreter', 'none')
 hold on
 
 %% Plot Thresholds
+plot([0 t(end)], [0 0], 'k--')
 for act_val = 1:1: min((255/(16/2))+1, 255)
     act_g = act_val * (62.5*g/1000);
     plot([0 t(end)], [act_g act_g], '--', 'Color', [.50 .50 .50])
-    plot([0 t(end)], [-1*act_g -1*act_g], '--', 'Color', [.50 .50 .50])
+    %plot([0 t(end)], [-1*act_g -1*act_g], '--', 'Color', [.50 .50 .50])
     text(t(end) + .25, act_g, ['T_A = ', num2str(act_val)])
-    text(t(end) + .25, -1*act_g, ['T_A = ', num2str(act_val)])
+    %text(t(end) + .25, -1*act_g, ['T_A = ', num2str(act_val)])
 end
 
 

@@ -2,7 +2,7 @@
 %  FILE: battery_viewer.m
 %  VERSION: 1.0.5
 %  TEST DATE: 10 March 2023
-%  DATE: 19 March 2023
+%  DATE: 22 March 2023
 %  PROJECT: Distributed Fence Monitor Capstone
 %  AUTHORS: Briellyn Braithwaite
 %  DESCRIPTION: 
@@ -13,7 +13,7 @@
 % LOG310_1: 2 day test. at TX 15 every 10 seconds for 46 ms.
 % Notes: Started at 4.13V, ended at 4.035. 
 
-% LOG311_1: week-long test. at TX 3 every 15 seconds for 46 ms.
+% LOG312_4: week-long test. at TX 3 every 15 seconds for 46 ms.
 % Notes: Started at 4.13V, 7:37 pm 3/11/2023. Awake for 73ms.
 
 %% Setup
@@ -26,8 +26,8 @@ format short
 format compact
 
 %% Constants
-voltage_hundred = 4.2;
-voltage_zero = 3; 
+voltage_hundred = 4.15; % typically around 4.2
+voltage_zero = 3.3; 
 % PMIC demands the voltage ends at 3.2V
 % battery can go as low as 2.75V. must not discharge faster than 2 Hours
 
@@ -44,12 +44,12 @@ opts.VariableNames = ["n_unused", "epoch", "reading", "flag_unused"];
 opts.VariableTypes = ["double", "double", "double", "double"];
 opts.ExtraColumnsRule = "ignore";
 opts.EmptyLineRule = "read";
-SD_data_1 = table2array(readtable("LOG310_1.TXT", opts)); 
+SD_data_1 = table2array(readtable("LOG312_4.TXT", opts)); 
 
 %% Conversion factors
 t_start = SD_data_1(1, 2);
 t = (SD_data_1(:, 2) - t_start) ;
-t = t ./ 3600; %./ 24; % t in hours
+t = t ./ 3600 ./ 24; % t in hours -> t in days
 
 v_at_adc = ADC_Vref * SD_data_1(:, 3) / (2^ADC_depth - 1);
 v_at_bat = min(voltage_hundred, ...
@@ -62,27 +62,35 @@ bat_percentage = 100*...
 n = 7;
 Y = conv(bat_percentage, ones(1, n), 'valid');
 smoothened_bat = Y(1:n:end) ./ n;
-t = t(1:n:end);
-t = t(1:length(smoothened_bat));
+t_short = t(1:n:end);
+t_short = t_short(1:length(smoothened_bat));
 
 %% Plots
 
 figure,
-hold on 
+subplot(2,1,1)
+hold on
 grid on
 
-plot(t, smoothened_bat, 'b')
-xlabel('t (hours)')
-xlim([0 240])
-xticks(0:12:t(end))
+plot(t_short, smoothened_bat, 'b')
+xlabel('t (days)')
+xticks(0:0.5:t_short(end))
 ylabel('Battery Charge (%)')
 ylim([0 100])
 yticks(0:5:100)
 title('Long Term Power Test')
 
 % line of best fit
-plot(0:240, -0.357*(0:240) + 100, 'r-.', 'LineWidth', 2) 
+%plot(0:240, -0.357*(0:240) + 100, 'r-.', 'LineWidth', 2) 
 
+subplot(2,1,2)
+hold on
+grid on
 
-
+plot(t, v_at_bat, 'r')
+xlabel('t (days)')
+xticks(0:0.5:t(end))
+ylabel('Voltage')
+ylim([3.0 4.3])
+yticks(0:0.1:5)
 
