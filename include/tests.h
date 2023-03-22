@@ -12,6 +12,7 @@ void isr();
 // Available test functions:
 void test_errors(void);
 void test_log_bat_SD(void);
+void test_threshes(void);
 void test_wake(void);
 void test_detection(void);
 void test_accel(void);

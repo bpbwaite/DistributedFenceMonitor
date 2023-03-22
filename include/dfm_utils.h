@@ -48,5 +48,7 @@ void mndtomatlab(Serial_ &, const MonitoringNodeData, const ReceiverExtras);
 // Shared Functions
 void indicateOn();
 void indicateOff();
+void errorOn();
+void errorOff();
 
 #endif
