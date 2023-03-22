@@ -134,15 +134,15 @@ void test_log_bat_SD(void) {
 }
 void test_threshes(void) {
 
-#define TESTTHRESH 2
+#define TESTTHRESH 1
 
-    MonitoringNodeData mnd_test; // object of type MonitoringNodeData
-    ADXL345 adxl = ADXL345(1);   // create an ADXL345 object and set the SPI Chip Select to 1
-    int x, y, z;                 // variables to hold the x, y, and z axis values
+    MonitoringNodeData mnd_test;         // object of type MonitoringNodeData
+    ADXL345 adxl = ADXL345(PIN_ADXLCS1); // create an ADXL345 object and set the SPI Chip Select to 1
+    int x, y, z;                         // variables to hold the x, y, and z axis values
 
-    pinMode(7, INPUT);
-    pinMode(A6, INPUT);
-    pinMode(PIN_STATUSLED, OUTPUT);
+    pinMode(PIN_INTERRUPT, INPUT);
+    pinMode(PIN_STATUSLED, INPUT);
+    pinMode(PIN_ERRORLED, OUTPUT);
     indicateOff();
 
     // ADXL345 setup
@@ -160,12 +160,12 @@ void test_threshes(void) {
     adxl.setInterruptMapping(ADXL345_DATA_READY, ADXL345_INT1_PIN);
 
     adxl.setActivityAc(1);                 // AC coupled activitiy
-    adxl.setActivityXYZ(1, 1, 1);          // Set to activate movement detection in the axes (1 == ON, 0 == OFF)
+    adxl.setActivityXYZ(0, 0, 1);          // Set to activate movement detection in the axes (1 == ON, 0 == OFF)
     adxl.setActivityThreshold(TESTTHRESH); // 62.5mg per increment
     adxl.setInterruptMapping(ADXL345_ACTIVITY, ADXL345_INT1_PIN);
 
     adxl.setInactivityAc(1);
-    adxl.setInactivityXYZ(1, 1, 1);
+    adxl.setInactivityXYZ(0, 0, 1);
     adxl.setInactivityThreshold(TESTTHRESH); // 62.5mg per increment
     adxl.InactivityINT(1);
     adxl.setTimeInactivity(1);
@@ -180,8 +180,6 @@ void test_threshes(void) {
     // disable FIFO-related interrupts
     adxl.setInterrupt(ADXL345_OVERRUNY, false);
     adxl.setInterrupt(ADXL345_WATERMARK, false);
-    adxl.setInterruptMapping(ADXL345_OVERRUNY, ADXL345_INT1_PIN);
-    adxl.setInterruptMapping(ADXL345_WATERMARK, ADXL345_INT1_PIN);
 
     if (Serial)
         Serial.end();
@@ -192,15 +190,15 @@ void test_threshes(void) {
     bool isActive = false;
     for (;;) {
         if (isActive)
-            indicateOn();
+            errorOn();
         else
-            indicateOff();
+            errorOff();
 
-        if (digitalRead(A6)) { // activity pin
+        if (digitalRead(PIN_INTERRUPT)) { // activity pin
             isActive            = true;
             byte whichInterrupt = adxl.getInterruptSource(); // clear interrupt
         }
-        if (digitalRead(7)) { // inactivity pin
+        if (digitalRead(PIN_STATUSLED)) { // inactivity pin
             isActive            = false;
             byte whichInterrupt = adxl.getInterruptSource(); // clear interrupt
         }
