@@ -11,38 +11,62 @@
 #ifdef ARDUINO_SAMD_MKRWAN1310
 
 #include <Arduino.h>
-#include <WString.h>
 
+// GENERAL SYSTEM CONFIGURATION
+#define DEBUG         true
+#define SERIALBAUD    115200
+#define SERIALTIMEOUT 10000
+
+// TIMING CONFIGURATION
+#define SLEEP_TIME_MS 15000
+#define GMTOFFSET     -25200
+
+// BATTERY POWER CONFIGURATION
+#define VBAT_HUNDRED 4.10
+#define VBAT_ZERO    3.30
+#define ADC_BITS     10 // see about setting to 12
+#define ADC_VREF     3.30
+#define R_bot        680000.0
+#define R_top        330000.0
+
+// VALUES DETERMINED BY PCB LAYOUT
 #define PIN_LORAMODE  2
 #define PIN_DISCRETE  0
 #define PIN_STATUSLED 6
 #define PIN_ERRORLED  3
 #define PIN_BATADC    A1 // not to be confused with ADC_BATTERY
 #define PIN_SW1       A5
-
 #define PIN_ADXLCS    1  // legacy chipselect pin for the accelerometer
 #define PIN_ADXLCS1   A3 // chipselect pin for the primary accelerometer
 #define PIN_ADXLCS2   A4 // chipselect pin for the secondary accelerometer
 #define PIN_INTERRUPT 7
 
-#define DEBUG         true
-#define SERIALBAUD    115200
-#define SERIALTIMEOUT 10000
+#define ADXL_VOLTAGE 303 // 303 for 3.3, 205 for 2.5
+
+// INERTIAL MEASUREMENT CONSTANTS
+#define ADXL_FALLING 1
+#define ADXL_RISING  0
+
+// INERTIAL MEASUREMENT SETTINGS
+#define ADXL_SENSITIVITY 2 // 2, 4, 8, 16 (g)
+#define ADXL_FULLRESBIT  1
+#define ADXL_ACT_THRESH  0x0005 // 62.5mg per increment
+#define ADXL_TIME_REST   2
+
+// LORA MODULE SETTINGS & CONFIG
+#define LORA_POWER 4 // 2-17 or 20
+
 // the following settings must match on the sender and receiver
 #define USING_CRC false
-#define GMTOFFSET -25200
 
-#define NUMCHANNELS_US 64
-#define NUMCHANNELS_EU 9
-
-#define CHIRPBW 125000UL // default 125E3. express as UL
+#define CHIRPBW 125000UL
+// default 125E3. express as UL
 // among other values, can also be 250E3 or 500E3.
 // cannot be 500E3 in the EU
 
 #define SPREADFACTOR 7
 // ranges from 7-12, default 7, sender/receiver must match.
 // The duration of a symbol is 2^SF / BW (SF: Spreading Factor, BW: Bandwidth)
-// a symbol is a byte packed as a two-nibble pair
 
 #define REGION_TAG  915    // 915 for US, 868 for EU
 #define SYNCWORD    0x0012 // default is 0x12, 0x34 is reserved for public communications. 2 bytes
@@ -52,35 +76,9 @@
 
 #define RECEIVER_GAINMODE 0 // Range 1-6. 0 is automatic. Applies to receiver only
 
-// note: alignment dictates 4 byte blocks
-typedef struct {
-    uint32_t packetnum;
-    uint16_t ID;
-    uint16_t connectedNodes;
-    uint16_t status;
-    uint16_t SyncWord;
-    uint32_t bat;
-    int32_t freq;
-    uint32_t upTime;
-    uint32_t timeOnAir;
-    float temperature;
-    uint32_t epoch;
-
-} MonitoringNodeData;
-
-typedef struct {
-    // Version of MonitoringNodeData that stores
-    // Information in as few bits as possible
-    uint32_t packetnum;  // 32 bits for packet number that increments with each transmission
-    uint32_t upTime;     // 32 bits for uptime in milliseconds
-    uint32_t epoch;      // 32 bits for global time since 1970
-    uint32_t all_states; // 32 bits for all states
-    uint16_t ID;         // 16 bits for ID of each node indicating which node it is
-    uint16_t reserved;   // 16 bits for future use
-    // syncword is already known by receiver by nature of having received the packet
-    // freq is already known by receiver by nature of having received the packet
-    // timeOnAir can be computed by the receiver
-} MND_Compact;
+// LORA MODULE CONSTANTS
+#define NUMCHANNELS_US 64
+#define NUMCHANNELS_EU 9
 
 const long LoRaChannelsUS[] = {
     902300000, 902500000, 902700000, 902900000, 903100000, 903300000, 903500000, 903700000, 903900000, 904100000,

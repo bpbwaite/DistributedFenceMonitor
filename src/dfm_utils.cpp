@@ -25,6 +25,7 @@ void errorOn() {
 void errorOff() {
     digitalWrite(PIN_ERRORLED, LOW);
 }
+
 uint8_t maxPayload(int region, int sf, long bw) {
     // get the max payload in bytes for different regions
     const uint8_t us_max_125[] = {242, 125, 53, 11, 0, 0};
@@ -79,6 +80,56 @@ double getTOA(int ps, int sf, long bw, int plen, float cr, bool ucrc) {
 
     return 1000.0 * (preambletime + payloadtime);
 }
+
+void setSeverity(MND_Compact &d, int severity) {
+    if (severity < 0)
+        severity = 0;
+    if (severity > 15)
+        severity = 15;
+    d.all_states = d.all_states & ~0xF0000000;
+    d.all_states = d.all_states & (severity << 28);
+}
+void setTSLC(MND_Compact &d, int min) {
+    if (min < 0)
+        min = 0;
+    if (min > 15)
+        min = 15;
+    d.all_states &= ~0x0F000000;
+    d.all_states |= (min << 24);
+}
+void setNeedRTC(MND_Compact &d, bool b) {
+    d.all_states &= ~0x00800000;
+    d.all_states |= (b << 23);
+}
+void setTemperature(MND_Compact &d, int degC) {
+    if (degC < 0)
+        degC = 0;
+    if (degC > 127)
+        degC = 127;
+    d.all_states &= ~0x007F0000;
+    d.all_states |= (degC << 16);
+}
+void setIMUBit(MND_Compact &d, bool b) {
+    d.all_states &= ~0x00008000;
+    d.all_states |= (b << 15);
+}
+void setBatt(MND_Compact &d, int percent) {
+    if (percent < 0)
+        percent = 0;
+    if (percent > 100)
+        percent = 100;
+    d.all_states &= ~0x00007F00;
+    d.all_states |= (percent << 8);
+}
+void setConnections(MND_Compact &d, int amt) {
+    if (amt < 0)
+        amt = 0;
+    if (amt > 63)
+        amt = 63;
+    d.all_states &= ~0x000000FC;
+    d.all_states |= (amt << 2);
+}
+
 void epchtostr(char *p, uint32_t epc) {
     // char* must have size 22
     struct tm ts;
@@ -191,6 +242,28 @@ void mndtomatlab(Serial_ &s, const MonitoringNodeData d, const ReceiverExtras e)
         s.write((unsigned char) ((uint8_t *) &d)[nb]);
     for (int nb = 0; nb < sizeof(ReceiverExtras); ++nb)
         s.write((unsigned char) ((uint8_t *) &e)[nb]);
+}
+
+int getSeverity(MND_Compact &d) {
+    return (d.all_states & 0xF0000000) >> 28;
+}
+int getTSLC(MND_Compact &d) {
+    return (d.all_states & 0x0F000000) >> 24;
+}
+bool getNeedRTC(MND_Compact &d) {
+    return (d.all_states & 0x00800000);
+}
+int getTemperature(MND_Compact &d) {
+    return (d.all_states & 0x007F0000) >> 16;
+}
+bool getIMUBit(MND_Compact &d) {
+    return (d.all_states & 0x00008000);
+}
+int getBatt(MND_Compact &d) {
+    return (d.all_states & 0x00007F00) >> 8;
+}
+int getConnections(MND_Compact &d) {
+    return (d.all_states & 0x000000FC) >> 2;
 }
 
 #endif

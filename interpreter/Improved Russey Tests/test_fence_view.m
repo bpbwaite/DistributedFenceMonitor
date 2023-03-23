@@ -20,7 +20,7 @@ databuf.panel = databuf.panel - 3;
 
 samples = 3; % at each TX power
 distance_between_panels = 2.67/2; % meters
-No_Signal = -120; % dB
+No_Signal = -122.5; % dBm for 125, SF7
 
 %% Plot: Link Margin
 
