@@ -244,6 +244,11 @@ void mndtomatlab(Serial_ &s, const MonitoringNodeData d, const ReceiverExtras e)
         s.write((unsigned char) ((uint8_t *) &e)[nb]);
 }
 
+// ISR function to be called within lowpower interrupt wakeup
+void wakeuphandler(void) {
+    motionDetected = true;
+}
+
 int getSeverity(MND_Compact &d) {
     return (d.all_states & 0xF0000000) >> 28;
 }

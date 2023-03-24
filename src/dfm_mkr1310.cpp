@@ -30,9 +30,10 @@
 #define SET_RTC       true
 
 // global variables and objects
-
+int ADXL_Z_AXIS[ADXL_SAMPLE_LENGTH];
 RTCZero rtc;
 MND_Compact mnd;
+ADXL345 adxl = ADXL345(PIN_ADXLCS1);
 
 const double bat_to_percent =
     100.0 * ((ADC_VREF * (R_top + R_bot) / R_bot) / pow(2.0, ADC_BITS - 1) - VBAT_ZERO) / (VBAT_HUNDRED - VBAT_ZERO);
@@ -60,15 +61,12 @@ void setup_mkr1310() {
     pinMode(PIN_SW1, INPUT_PULLUP);
     pinMode(PIN_BATADC, INPUT);
     pinMode(PIN_INTERRUPT, INPUT_PULLDOWN);
-
     pinMode(PIN_STATUSLED, OUTPUT);
     pinMode(PIN_ERRORLED, OUTPUT);
     indicateOn();
     errorOff();
 
     // ADXL INITIALIZATION
-
-    ADXL345 adxl = ADXL345(PIN_ADXLCS1);
 
     adxl.powerOn();
     adxl.setSpiBit(0); // 4-Wire SPI
@@ -157,6 +155,10 @@ void setup_mkr1310() {
 
     Serial.println(F("Notice: Node Setup Complete"));
     Serial.println(F("Notice: There will be no more serial messages"));
+    // ISR ATTACHMENT
+    LowPower.attachInterruptWakeup(
+        PIN_INTERRUPT, wakeuphandler, RISING); // wake up on pin 7 rising edge and attach interrupt to pin 7 and sets
+                                               // handler of isr to the function named isr
 
     indicateOff();
 
@@ -166,7 +168,7 @@ void setup_mkr1310() {
 }
 
 void loop_mkr1310() {
-
+    // execution resumes from sleep here
     mnd.upTime = millis();
     mnd.epoch  = rtc.getEpoch();
 
@@ -176,15 +178,33 @@ void loop_mkr1310() {
             100 * (((ADC_VREF * (bat_raw) / ((0b1 << ADC_BITS) - 1)) * (R_top + R_bot) / R_bot) - VBAT_ZERO) /
                 (VBAT_HUNDRED - VBAT_ZERO));
 
+    // Boolean motionDetected that is changed from the ISR
+    if (motionDetected) {
+        motionDetected = false;
+        // Data Collection mode
+        adxl.setInterrupt(ADXL345_ACTIVITY, false);  // disabling activity interrupt
+        adxl.setInterrupt(ADXL345_DATA_READY, true); // enabling data ready interrupt
+        // collection logic here
+        int i = 0;
+        int z = 0;
+        while (i < ADXL_SAMPLE_LENGTH) {
+
+            while (!digitalRead(PIN_INTERRUPT)) // wait for the pin to go high and take sample
+                ;
+            adxl.readAccel(&z);
+            ;
+            ADXL_Z_AXIS[i % ADXL_SAMPLE_LENGTH] = z;
+            i++;
+        }
+        // After Data Collection mode
+        adxl.setInterrupt(ADXL345_ACTIVITY, true);    // enabling activity interrupt
+        adxl.setInterrupt(ADXL345_DATA_READY, false); // disabling data ready interrupt
+    }
+
     mnd.packetnum += 1;
     LoRa.beginPacket();
     LoRa.write((uint8_t *) &mnd, sizeof(MND_Compact)); // Write the data to the packet
     LoRa.endPacket(true);                              // false to block while sending
-
-    // do some stuff here that doesn't depend on lora
-    while (LoRa.isTransmitting())
-        ; // replace with hardcoded experimental time?
-
     LoRa.sleep();
     LowPower.deepSleep(SLEEP_TIME_MS);
 }
