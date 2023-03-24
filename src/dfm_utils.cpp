@@ -8,7 +8,6 @@
 */
 #ifdef ARDUINO_SAMD_MKRWAN1310
 #include "dfm_utils.h"
-#include "dfm_mkr1310.h"
 #include <LoRa.h>
 #include <SPI.h>
 #include <time.h>
@@ -242,11 +241,6 @@ void mndtomatlab(Serial_ &s, const MonitoringNodeData d, const ReceiverExtras e)
         s.write((unsigned char) ((uint8_t *) &d)[nb]);
     for (int nb = 0; nb < sizeof(ReceiverExtras); ++nb)
         s.write((unsigned char) ((uint8_t *) &e)[nb]);
-}
-
-// ISR function to be called within lowpower interrupt wakeup
-void wakeuphandler(void) {
-    motionDetected = true;
 }
 
 int getSeverity(MND_Compact &d) {

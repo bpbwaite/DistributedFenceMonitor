@@ -10,11 +10,8 @@
 
 #ifdef ARDUINO_SAMD_MKRWAN1310
 
-#include "dfm_mkr1310.h"
 #include <Arduino.h>
-
-// Global Variables
-volatile bool motionDetected = false;
+#include "dfm_mkr1310.h"
 
 // Structures
 
@@ -81,9 +78,6 @@ void setTemperature(MND_Compact &, int);
 void setIMUBit(MND_Compact &, bool);
 void setBatt(MND_Compact &, int);
 void setConnections(MND_Compact &, int);
-
-// ISR Functions
-void wakeuphandler(void);
 
 // Receiver Functions
 void epchtostr(char *, uint32_t);                   // deprecated
