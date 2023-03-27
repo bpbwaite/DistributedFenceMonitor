@@ -8,7 +8,6 @@
 */
 #include "dfm_mkr1310.h"
 #include "dfm_utils.h"
-#include "tests.h"
 
 #if defined(ARDUINO_SAMD_MKRWAN1310) && defined(CENTRAL_NODE)
 
@@ -24,9 +23,9 @@
 // global variables and objects
 
 RTCZero rtc;
-MonitoringNodeData mndBuf;
+MND_Compact mnd_received;
+MonitoringNodeData mnd_printable;
 
-int counter                = 1;
 long freq                  = LoRaChannelsUS[63];
 volatile int interruptFlag = 0;
 
@@ -59,20 +58,22 @@ void setup_recv_mkr1310() {
     LoRa.setSignalBandwidth(CHIRPBW);
     LoRa.setSyncWord(SYNCWORD);
     LoRa.setPreambleLength(PREAMBLELEN);
-#if defined(USING_CRC)
-    LoRa.enableCrc();
-    Serial.println(F("Notice: CRC Enabled"));
-#else
-    LoRa.disableCrc();
-    Serial.println(F("Notice: CRC Disabled"));
-#endif
+    if (USING_CRC) {
+        LoRa.enableCrc();
+        Serial.println(F("Notice: CRC Enabled"));
+    }
+    else {
+        LoRa.disableCrc();
+        Serial.println(F("Notice: CRC Disabled"));
+    }
 
-    SPI.usingInterrupt(digitalPinToInterrupt(LORA_IRQ));
+    // SPI.usingInterrupt(digitalPinToInterrupt(LORA_IRQ));
+    // SPI.notUsingInterrupt(digitalPinToInterrupt(LORA_IRQ));
+    //  need to call this to reset the internal IVT over SPI
+
+    //  interrupt attachment order matters
     LowPower.attachInterruptWakeup(
         digitalPinToInterrupt(LORA_IRQ), []() -> void {}, RISING);
-    SPI.notUsingInterrupt(digitalPinToInterrupt(LORA_IRQ));
-    // need to call this to reset the internal IVT over SPI
-    // interrupt attachment order matters
     LoRa.onReceive([](int sz) -> void { interruptFlag = sz; });
     Serial.println(F("Notice: Callback function bound to receiver"));
 
@@ -89,11 +90,10 @@ void loop_recv_mkr1310() {
     indicateOn();
 
     Serial.print('#');
-    // Serial.println(counter++);
 
     int byteIndexer = 0;
-    while (LoRa.available() && byteIndexer < sizeof(MonitoringNodeData))
-        ((uint8_t *) &mndBuf)[byteIndexer++] = (uint8_t) LoRa.read(); // 1 byte at a time
+    while (LoRa.available() && byteIndexer < sizeof(MND_Compact))
+        ((uint8_t *) &mnd_received)[byteIndexer++] = (uint8_t) LoRa.read(); // 1 byte at a time
 
     ReceiverExtras r = {
         LoRa.packetRssi(),
@@ -101,7 +101,23 @@ void loop_recv_mkr1310() {
         CHIRPBW,
         SPREADFACTOR,
     };
-    mndtomatlab(Serial, mndBuf, r);
+
+    // expand data for easier processing
+    mnd_printable.bat            = getBatt(mnd_received);
+    mnd_printable.connectedNodes = getConnections(mnd_received);
+    mnd_printable.epoch          = mnd_received.epoch;
+    mnd_printable.freq           = LoRaChannelsUS[63];
+    mnd_printable.ID             = mnd_received.ID;
+    mnd_printable.packetnum      = mnd_received.packetnum;
+    mnd_printable.status         = getSeverity(mnd_received);
+    mnd_printable.SyncWord       = SYNCWORD;
+    mnd_printable.temperature    = getTemperature(mnd_received);
+    mnd_printable.timeOnAir      = 0;
+    mnd_printable.upTime         = mnd_received.upTime;
+
+    for (int nb = 0; nb < sizeof(MonitoringNodeData); ++nb)
+        Serial.write((unsigned char) ((uint8_t *) &mnd_printable)[nb]);
+
     Serial.println();
 
     interruptFlag = 0;

@@ -31,20 +31,19 @@ numchus = length(lch_us);
 numcheu = length(lch_eu);
 
 baud = 115200; % bps
-timeout = 10; % s
+timeout = 30; % s
 gmtoffset = -25200; % s
 
 % battery voltage divider values
-vbat_max = 3.85; % volts at 100% charge
-vbat_min = 3.40; % volts when dead
+vbat_max = 4.2; % volts at 100% charge
+vbat_min = 3.3; % volts when dead
 vref = 3.3; % volts
 adc_res = 12; % bits
 R6 = 680000; % upper
 R7 = 330000; % lower
 mV_per_pt = vref / (2^adc_res) / (R7/(R6+R7));
 %% Connection
-spla = "COM8";
-s = serialport(spla, 115200);
+s = serialport(serialportlist', 115200);
 s.Timeout = timeout;
     
 disp("Setup complete!")
@@ -71,15 +70,8 @@ while 1
         databuf.uptime = read(s, 1, "uint32");
         databuf.toa = read(s, 1, "uint32");
         databuf.temp = read(s, 1, "single");
-        databuf.acx = read(s, 1, "single");
-        databuf.acy = read(s, 1, "single");
-        databuf.acz = read(s, 1, "single");
         databuf.epoch = read(s, 1, "uint32");
         % extra-struct values
-        databuf.rssi = read(s, 1, "int32");
-        databuf.snr = read(s, 1, "single");
-        databuf.bw = read(s, 1, "uint32");
-        databuf.sf = read(s, 1, "int8");
         % terminator
         newl = read(s, 2, "uint8");
         
@@ -100,8 +92,7 @@ while 1
             [find(lch_us == databuf.freq), find(lch_eu == databuf.freq)]);
         hrbuf.syncword = sprintf('0x%04X',...
             databuf.sw);
-        hrbuf.config = sprintf('SF%dBW%d',...
-            databuf.sf, databuf.bw / 1000);
+        
         hrbuf.uptime = sprintf('%01um%02us',...
             floor(databuf.uptime/1000/60),...
             floor(databuf.uptime/1000 - 60*floor(databuf.uptime/1000/60)));
@@ -109,19 +100,9 @@ while 1
             databuf.toa);
         hrbuf.temperature = sprintf('%.1fC',...
             databuf.temp);
-        hrbuf.accx = sprintf('%.2f g',...
-            databuf.acx);
-        hrbuf.accy = sprintf('%.2f g',...
-            databuf.acy);
-        hrbuf.accz = sprintf('%.2f g',...
-            databuf.acz);
         hrbuf.epoch = sprintf('%s',...
             string(datetime(databuf.epoch + gmtoffset,...
             'convertfrom', 'posixtime', 'Format', 'MM-dd-yyyy HH:mm:ss')));
-        hrbuf.rssi = sprintf('%d dBmW',...
-            databuf.rssi);
-        hrbuf.snr = sprintf('%.1f dB',...
-            databuf.snr);
         
         disp(hrbuf)
         disp('----')
