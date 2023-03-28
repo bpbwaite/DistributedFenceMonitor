@@ -24,7 +24,7 @@
 
 RTCZero rtc;
 MND_Compact mnd_received;
-MonitoringNodeData mnd_printable;
+MND_Report mnd_printable;
 
 long freq                  = LoRaChannelsUS[63];
 volatile int interruptFlag = 0;
@@ -32,14 +32,17 @@ volatile int interruptFlag = 0;
 void setup_recv_mkr1310() {
 
     rtc.begin();
-#if defined(SET_RTC)
-    rtc.setEpoch(COMPILE_TIME);
-    rtc.disableAlarm();
-#endif
+    if (SET_RTC) {
+        rtc.setEpoch(COMPILE_TIME);
+        rtc.disableAlarm();
+    }
 
     Serial.begin(SERIALBAUD);
     while (!Serial && millis() < SERIALTIMEOUT)
         yield();
+    if (!Serial)
+        ERROR_OUT(0b00101000);
+
     Serial.println(F("Notice: Serial Interface Connected!"));
 
     pinMode(PIN_STATUSLED, OUTPUT);
@@ -49,7 +52,7 @@ void setup_recv_mkr1310() {
     if (!LoRa.begin(freq)) {
         Serial.println(F("Error: LoRa Module Failure"));
         while (1)
-            ;
+            ERROR_OUT(0b11000010);
     }
     Serial.println(F("Notice: LoRa Module Online"));
 
@@ -89,37 +92,34 @@ void loop_recv_mkr1310() {
 
     indicateOn();
 
-    Serial.print('#');
-
     int byteIndexer = 0;
     while (LoRa.available() && byteIndexer < sizeof(MND_Compact))
-        ((uint8_t *) &mnd_received)[byteIndexer++] = (uint8_t) LoRa.read(); // 1 byte at a time
-
-    ReceiverExtras r = {
-        LoRa.packetRssi(),
-        LoRa.packetSnr(),
-        CHIRPBW,
-        SPREADFACTOR,
-    };
+        ((uint8_t *) &mnd_received)[byteIndexer++] = (uint8_t) LoRa.read();
 
     // expand data for easier processing
-    mnd_printable.bat            = getBatt(mnd_received);
-    mnd_printable.connectedNodes = getConnections(mnd_received);
-    mnd_printable.epoch          = mnd_received.epoch;
-    mnd_printable.freq           = LoRaChannelsUS[63];
     mnd_printable.ID             = mnd_received.ID;
     mnd_printable.packetnum      = mnd_received.packetnum;
-    mnd_printable.status         = getSeverity(mnd_received);
-    mnd_printable.SyncWord       = SYNCWORD;
     mnd_printable.temperature    = getTemperature(mnd_received);
-    mnd_printable.timeOnAir      = 0;
+    mnd_printable.bat            = getBatt(mnd_received);
+    mnd_printable.severity       = getSeverity(mnd_received);
+    mnd_printable.connectedNodes = getConnections(mnd_received);
+    mnd_printable.hasAccel       = getIMUBit(mnd_received);
+    mnd_printable.wantsRTC       = getNeedRTC(mnd_received);
     mnd_printable.upTime         = mnd_received.upTime;
+    mnd_printable.epoch          = mnd_received.epoch;
+    mnd_printable.minSinceCal    = getTSLC(mnd_received);
+    mnd_printable.sw             = SYNCWORD;
+    mnd_printable.bw             = CHIRPBW;
+    mnd_printable.freq           = LoRaChannelsUS[63];
+    mnd_printable.rssi           = LoRa.packetRssi();
+    mnd_printable.hops           = 0;
 
-    for (int nb = 0; nb < sizeof(MonitoringNodeData); ++nb)
+    Serial.print('#');
+    for (int nb = 0; nb < sizeof(MND_Report); ++nb)
         Serial.write((unsigned char) ((uint8_t *) &mnd_printable)[nb]);
-
     Serial.println();
 
+    // prepare for next packet
     interruptFlag = 0;
 }
 

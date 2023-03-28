@@ -16,21 +16,6 @@
 // Structures
 
 typedef struct {
-    uint32_t packetnum;
-    uint16_t ID;
-    uint16_t connectedNodes;
-    uint16_t status;
-    uint16_t SyncWord;
-    uint32_t bat;
-    int32_t freq;
-    uint32_t upTime;
-    uint32_t timeOnAir;
-    float temperature;
-    uint32_t epoch;
-    // note: alignment dictates 4 byte blocks
-} MonitoringNodeData;
-
-typedef struct {
     // Version of MonitoringNodeData that stores
     // Information in as few bits as possible
     uint32_t packetnum;  // 32 bits for packet number that increments with each transmission
@@ -43,6 +28,52 @@ typedef struct {
     // freq is already known by receiver by nature of having received the packet
     // timeOnAir can be computed by the receiver
 } MND_Compact;
+
+typedef struct {
+
+    // what gets reported from the central node to central server
+    // everything shall be 32 bits. only the sign matters; size doesn't, alignment does.
+    // physical stats
+    uint32_t ID;
+    uint32_t packetnum;
+    uint32_t bat;
+    uint32_t temperature;
+
+    // indicators
+    uint32_t severity;
+    uint32_t connectedNodes;
+    uint32_t hasAccel;
+    uint32_t wantsRTC;
+    uint32_t upTime;
+    uint32_t epoch;
+    uint32_t minSinceCal;
+
+    // lora stats
+    uint32_t sw;
+    uint32_t bw;
+    int32_t freq;
+    int32_t rssi;
+
+    // not yet implemented
+    uint32_t hops;
+
+} MND_Report;
+
+// Deprecated:
+// typedef struct {
+//     uint32_t packetnum;
+//     uint16_t ID;
+//     uint16_t connectedNodes;
+//     uint16_t status;
+//     uint16_t SyncWord;
+//     uint32_t bat;
+//     int32_t freq;
+//     uint32_t upTime;
+//     uint32_t timeOnAir;
+//     float temperature;
+//     uint32_t epoch;
+//     // note: alignment dictates 4 byte blocks
+// } MonitoringNodeData;
 
 typedef struct {
     int32_t rssi;
@@ -68,7 +99,7 @@ typedef struct {
 } AccelData;
 
 // Node Functions
-uint8_t maxPayload(int = REGION_TAG, int = SPREADFACTOR, long = CHIRPBW);
+uint8_t maxPayload(int = REGION_TAG_US, int = SPREADFACTOR, long = CHIRPBW);
 double getTOA(int, int = SPREADFACTOR, long = CHIRPBW, int = PREAMBLELEN, float = CODERATE, bool = USING_CRC);
 
 void setSeverity(MND_Compact &, int);
@@ -80,15 +111,16 @@ void setBatt(MND_Compact &, int);
 void setConnections(MND_Compact &, int);
 
 // Receiver Functions
-void epchtostr(char *, uint32_t);                   // deprecated
-void mndtostr(Serial_ &, const MonitoringNodeData); // deprecated
-void mndtomatlab(Serial_ &, const MonitoringNodeData, const ReceiverExtras);
+void epchtostr(char *, uint32_t); // deprecated
+// void mndtostr(Serial_ &, const MonitoringNodeData); // deprecated
+// void mndtomatlab(Serial_ &, const MonitoringNodeData, const ReceiverExtras);
 
 // Shared Functions
 void indicateOn();
 void indicateOff();
 void errorOn();
 void errorOff();
+void ERROR_OUT(uint8_t = 0b10001000);
 
 int getSeverity(MND_Compact &);
 int getTSLC(MND_Compact &);
