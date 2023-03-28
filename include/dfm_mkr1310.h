@@ -20,7 +20,7 @@
 // TIMING CONFIGURATION
 #define SLEEP_TIME_MS      15000
 #define GMTOFFSET          -25200
-#define ADXL_SAMPLE_LENGTH 1000
+#define ADXL_SAMPLE_LENGTH 350 // The number of accelerometer readings to hold
 
 // BATTERY POWER CONFIGURATION
 #define VBAT_HUNDRED 4.10
@@ -33,7 +33,7 @@
 // VALUES DETERMINED BY PCB LAYOUT
 #define PIN_LORAMODE  2
 #define PIN_DISCRETE  0
-#define PIN_STATUSLED 6
+#define PIN_STATUSLED 6 // also shows the status of INT2
 #define PIN_ERRORLED  3
 #define PIN_BATADC    A1 // not to be confused with ADC_BATTERY
 #define PIN_SW1       A5
@@ -53,29 +53,27 @@
 #define ADXL_FULLRESBIT  1
 #define ADXL_ACT_THRESH  0x0005 // 62.5mg per increment
 #define ADXL_TIME_REST   2
+#define ADXL_LSB_PER_G_Z 256.0
+#define GRAVITY          9.81
 
 // LORA MODULE SETTINGS & CONFIG
 #define LORA_POWER 4 // 2-17 or 20
-
 // the following settings must match on the sender and receiver
 #define USING_CRC false
-
-#define CHIRPBW 125000UL
+#define CHIRPBW   125000UL
 // default 125E3. express as UL
 // among other values, can also be 250E3 or 500E3.
 // cannot be 500E3 in the EU
-
 #define SPREADFACTOR 7
 // ranges from 7-12, default 7, sender/receiver must match.
 // The duration of a symbol is 2^SF / BW (SF: Spreading Factor, BW: Bandwidth)
-
-#define REGION_TAG  915    // 915 for US, 868 for EU
-#define SYNCWORD    0x0012 // default is 0x12, 0x34 is reserved for public communications. 2 bytes
-#define PREAMBLELEN 8      // 6-65535, default 8. symbols of 8 bits each
-#define CRCLEN      2      // bytes of CRC
-#define CODERATE    5      // represents 4/5
-
-#define RECEIVER_GAINMODE 0 // Range 1-6. 0 is automatic. Applies to receiver only
+#define REGION_TAG_US     915    // 915 for US, 868 for EU
+#define REGION_TAG_EU     868    // 915 for US, 868 for EU
+#define SYNCWORD          0x0012 // default is 0x12, 0x34 is reserved for public communications. 2 bytes
+#define PREAMBLELEN       8      // 6-65535, default 8. symbols of 8 bits each
+#define CRCLEN            2      // bytes of CRC
+#define CODERATE          5      // represents 4/5
+#define RECEIVER_GAINMODE 0      // Range 1-6. 0 is automatic. Applies to receiver only
 
 // LORA MODULE CONSTANTS
 #define NUMCHANNELS_US 64

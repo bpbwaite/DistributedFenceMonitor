@@ -24,6 +24,21 @@ void errorOn() {
 void errorOff() {
     digitalWrite(PIN_ERRORLED, LOW);
 }
+void ERROR_OUT(uint8_t sequence) {
+    const unsigned long dash_time  = 1200;
+    const unsigned long dot_time   = 200;
+    const unsigned long slack_time = 1000;
+    for (byte x = 0b10000000; x > 0; x /= 2) {
+        errorOn();
+        if (sequence & x)
+            delay(dash_time);
+        else
+            delay(dot_time);
+        errorOff();
+        delay(dot_time);
+    }
+    delay(slack_time);
+}
 
 uint8_t maxPayload(int region, int sf, long bw) {
     // get the max payload in bytes for different regions
@@ -137,111 +152,110 @@ void epchtostr(char *p, uint32_t epc) {
     strftime(p, 22, "%m-%d-%Y %H:%M:%S", &ts);
 }
 
-void mndtostr(Serial_ &s, const MonitoringNodeData d) {
-    static char p[322];
-
-    char channelStr[20];
-    int k;
-    if ((d.freq >= LoRaChannelsUS[0]) && (d.freq <= LoRaChannelsUS[NUMCHANNELS_US - 1])) {
-        for (k = 0; k < NUMCHANNELS_US; ++k)
-            if (LoRaChannelsUS[k] == (long) d.freq)
-                break;
-        sprintf(channelStr, "America Ch. %d", k);
-    }
-    else if ((d.freq >= LoRaChannelsEU[0]) && (d.freq <= LoRaChannelsEU[NUMCHANNELS_EU - 1])) {
-        int k;
-        for (k = 0; k < NUMCHANNELS_EU; ++k)
-            if (LoRaChannelsEU[k] == (long) d.freq)
-                break;
-        sprintf(channelStr, "Europe Ch. %d", k);
-    }
-    else
-        strcpy(channelStr, "Unknown");
-
-    char syncWordGoodStr[4];
-    if (d.SyncWord == SYNCWORD)
-        strcpy(syncWordGoodStr, "OK");
-    else
-        strcpy(syncWordGoodStr, "ERR");
-
-    char epochStr[22];
-    epchtostr(epochStr, d.epoch);
-
-    char confStr[10];
-    sprintf(confStr, "SF%dBW%d", SPREADFACTOR, int(CHIRPBW / 1000U));
-
-    // snr relative strength is SF dependent
-    float snr = LoRa.packetSnr();
-
-    PGM_P format = ">ID: 0x%02X\r\n"
-                   ">Pack: %d\r\n"
-                   ">Stat: 0x%02X\r\n"
-                   ">Cons: %d\r\n"
-                   ">Batt: %d\r\n"
-                   ">Freq: %.1fMHz (%s)\r\n"
-                   ">SW: 0x%04X (%s)\r\n"
-                   ">Uptime: %ds\r\n"
-                   ">TOA: %dms\r\n"
-                   ">Temp: %.1fC\r\n"
-                   ">AccX: %.2fg\r\n"
-                   ">AccY: %.2fg\r\n"
-                   ">AccZ: %.2fg\r\n"
-                   ">Epoch: %s\r\n"
-                   ">Conf: %s\r\n"
-                   ">RSSI: %ddBmW\r\n"
-                   ">SNR: %.1fdB\r\n";
-
-    // use to determine the max format buffer size required, then comment out.
-    // remember to leave one for null char
-    // PGM_P formatmax = ">ID: 0xAA\r\n"
-    //                   ">Pack: 1000000000\r\n"
-    //                   ">Stat: 0xAA\r\n"
-    //                   ">Cons: 1000000000\r\n"
-    //                   ">Batt: 1000000000\r\n"
-    //                   ">Freq: 999.1fMHz (America Ch. 64)\r\n"
-    //                   ">SW: 0xAAAA (ERR)\r\n"
-    //                   ">Uptime: 1000000000s\r\n"
-    //                   ">TOA: 1000000000ms\r\n"
-    //                   ">Temp: 254.12C\r\n"
-    //                   ">AccX: -15.25g\r\n"
-    //                   ">AccY: -15.25g\r\n"
-    //                   ">AccZ: -15.25g\r\n"
-    //                   ">Epoch: 12-31-2000 24:59:59\r\n"
-    //                   ">Conf: SF12BW500\r\n"
-    //                   ">RSSI: -120dBmW\r\n"
-    //                   ">SNR: -20.0dB\r\n";
-
-    sprintf(p,
-            format,
-            d.ID,
-            d.packetnum,
-            d.status,
-            d.connectedNodes,
-            d.bat,
-            d.freq / 1000000.0,
-            channelStr,
-            d.SyncWord,
-            syncWordGoodStr,
-            d.upTime / 1000,
-            d.timeOnAir,
-            d.temperature,
-            0,
-            0,
-            0,
-            epochStr,
-            confStr,
-            LoRa.packetRssi(),
-            snr);
-
-    s.print(p);
-}
-
-void mndtomatlab(Serial_ &s, const MonitoringNodeData d, const ReceiverExtras e) {
-    for (int nb = 0; nb < sizeof(MonitoringNodeData); ++nb)
-        s.write((unsigned char) ((uint8_t *) &d)[nb]);
-    for (int nb = 0; nb < sizeof(ReceiverExtras); ++nb)
-        s.write((unsigned char) ((uint8_t *) &e)[nb]);
-}
+// void mndtostr(Serial_ &s, const MonitoringNodeData d) {
+//     static char p[322];
+//
+//     char channelStr[20];
+//     int k;
+//     if ((d.freq >= LoRaChannelsUS[0]) && (d.freq <= LoRaChannelsUS[NUMCHANNELS_US - 1])) {
+//         for (k = 0; k < NUMCHANNELS_US; ++k)
+//             if (LoRaChannelsUS[k] == (long) d.freq)
+//                 break;
+//         sprintf(channelStr, "America Ch. %d", k);
+//     }
+//     else if ((d.freq >= LoRaChannelsEU[0]) && (d.freq <= LoRaChannelsEU[NUMCHANNELS_EU - 1])) {
+//         int k;
+//         for (k = 0; k < NUMCHANNELS_EU; ++k)
+//             if (LoRaChannelsEU[k] == (long) d.freq)
+//                 break;
+//         sprintf(channelStr, "Europe Ch. %d", k);
+//     }
+//     else
+//         strcpy(channelStr, "Unknown");
+//
+//     char syncWordGoodStr[4];
+//     if (d.SyncWord == SYNCWORD)
+//         strcpy(syncWordGoodStr, "OK");
+//     else
+//         strcpy(syncWordGoodStr, "ERR");
+//
+//     char epochStr[22];
+//     epchtostr(epochStr, d.epoch);
+//
+//     char confStr[10];
+//     sprintf(confStr, "SF%dBW%d", SPREADFACTOR, int(CHIRPBW / 1000U));
+//
+//     // snr relative strength is SF dependent
+//     float snr = LoRa.packetSnr();
+//
+//     PGM_P format = ">ID: 0x%02X\r\n"
+//                    ">Pack: %d\r\n"
+//                    ">Stat: 0x%02X\r\n"
+//                    ">Cons: %d\r\n"
+//                    ">Batt: %d\r\n"
+//                    ">Freq: %.1fMHz (%s)\r\n"
+//                    ">SW: 0x%04X (%s)\r\n"
+//                    ">Uptime: %ds\r\n"
+//                    ">TOA: %dms\r\n"
+//                    ">Temp: %.1fC\r\n"
+//                    ">AccX: %.2fg\r\n"
+//                    ">AccY: %.2fg\r\n"
+//                    ">AccZ: %.2fg\r\n"
+//                    ">Epoch: %s\r\n"
+//                    ">Conf: %s\r\n"
+//                    ">RSSI: %ddBmW\r\n"
+//                    ">SNR: %.1fdB\r\n";
+//
+//     // use to determine the max format buffer size required, then comment out.
+//     // remember to leave one for null char
+//     // PGM_P formatmax = ">ID: 0xAA\r\n"
+//     //                   ">Pack: 1000000000\r\n"
+//     //                   ">Stat: 0xAA\r\n"
+//     //                   ">Cons: 1000000000\r\n"
+//     //                   ">Batt: 1000000000\r\n"
+//     //                   ">Freq: 999.1fMHz (America Ch. 64)\r\n"
+//     //                   ">SW: 0xAAAA (ERR)\r\n"
+//     //                   ">Uptime: 1000000000s\r\n"
+//     //                   ">TOA: 1000000000ms\r\n"
+//     //                   ">Temp: 254.12C\r\n"
+//     //                   ">AccX: -15.25g\r\n"
+//     //                   ">AccY: -15.25g\r\n"
+//     //                   ">AccZ: -15.25g\r\n"
+//     //                   ">Epoch: 12-31-2000 24:59:59\r\n"
+//     //                   ">Conf: SF12BW500\r\n"
+//     //                   ">RSSI: -120dBmW\r\n"
+//     //                   ">SNR: -20.0dB\r\n";
+//
+//     sprintf(p,
+//             format,
+//             d.ID,
+//             d.packetnum,
+//             d.status,
+//             d.connectedNodes,
+//             d.bat,
+//             d.freq / 1000000.0,
+//             channelStr,
+//             d.SyncWord,
+//             syncWordGoodStr,
+//             d.upTime / 1000,
+//             d.timeOnAir,
+//             d.temperature,
+//             0,
+//             0,
+//             0,
+//             epochStr,
+//             confStr,
+//             LoRa.packetRssi(),
+//             snr);
+//
+//     s.print(p);
+// }
+// void mndtomatlab(Serial_ &s, const MonitoringNodeData d, const ReceiverExtras e) {
+//     for (int nb = 0; nb < sizeof(MonitoringNodeData); ++nb)
+//         s.write((unsigned char) ((uint8_t *) &d)[nb]);
+//     for (int nb = 0; nb < sizeof(ReceiverExtras); ++nb)
+//         s.write((unsigned char) ((uint8_t *) &e)[nb]);
+// }
 
 int getSeverity(MND_Compact &d) {
     return (d.all_states & 0xF0000000) >> 28;
