@@ -7,6 +7,7 @@
   DESCRIPTION: Preliminary test code for MKR1310
 */
 #include "dfm_mkr1310.h"
+#include "dfm_errors.h"
 #include "dfm_utils.h"
 
 #if defined(ARDUINO_SAMD_MKRWAN1310) && !defined(CENTRAL_NODE)
@@ -118,7 +119,7 @@ void setup_mkr1310() {
         adxl->readAccel(&dum.x, &dum.y, &dum.z);
         if ((abs(dum.x) + abs(dum.y) + abs(dum.z)) <= 0) {
             Serial.println(F("Error: ADXL Appears Offline"));
-            ERROR_OUT(0b10011100);
+            ERROR_OUT(ERROR_ADXL345);
         }
         else
             break;
@@ -140,7 +141,7 @@ void setup_mkr1310() {
 
     if (!LoRa.begin(freq)) {
         Serial.println(F("Error: LoRa Module Failure"));
-        ERROR_OUT(0b11000010);
+        ERROR_OUT(ERROR_NO_LORA);
     }
 
     LoRa.setSpreadingFactor(SPREADFACTOR);
@@ -266,7 +267,7 @@ void loop_mkr1310() {
 
     // compact-byte types:
     setSeverity(mnd, severityLevel);
-    setTSLC(mnd, TSLC);
+    setTSLC(mnd, (TSLC / 1000 / 60));
     setTemperature(mnd, 25);
 
     AccelData dum;
@@ -286,7 +287,7 @@ void loop_mkr1310() {
 
     LoRa.beginPacket();
     LoRa.write((uint8_t *) &mnd, sizeof(MND_Compact)); // Write the data to the packet
-    LoRa.endPacket(true);                              // false to block while sending
+    LoRa.endPacket(false);                             // false to block while sending
     LoRa.sleep();
 
     LowPower.deepSleep(SLEEP_TIME_MS);

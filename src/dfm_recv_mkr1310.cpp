@@ -1,11 +1,12 @@
 /*
   FILE: DFM_MKR1310.CPP
-  VERSION: 0.2.1
-  DATE: 3 March 2023
+  VERSION: 1.0.0
+  DATE: 27 March 2023
   PROJECT: Distributed Fence Monitor Capstone
   AUTHORS: Briellyn Braithwaite
   DESCRIPTION: MKR1310 Central Node Code
 */
+#include "dfm_errors.h"
 #include "dfm_mkr1310.h"
 #include "dfm_utils.h"
 
@@ -41,7 +42,7 @@ void setup_recv_mkr1310() {
     while (!Serial && millis() < SERIALTIMEOUT)
         yield();
     if (!Serial)
-        ERROR_OUT(0b00101000);
+        ERROR_OUT(ERROR_NO_SERIAL);
 
     Serial.println(F("Notice: Serial Interface Connected!"));
 
@@ -52,7 +53,7 @@ void setup_recv_mkr1310() {
     if (!LoRa.begin(freq)) {
         Serial.println(F("Error: LoRa Module Failure"));
         while (1)
-            ERROR_OUT(0b11000010);
+            ERROR_OUT(ERROR_NO_LORA);
     }
     Serial.println(F("Notice: LoRa Module Online"));
 
