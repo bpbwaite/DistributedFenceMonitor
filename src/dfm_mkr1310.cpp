@@ -3,7 +3,7 @@
   VERSION: 0.2.5
   DATE: 27 March 2023
   PROJECT: Distributed Fence Monitor Capstone
-  AUTHORS: Briellyn Braithwaite, Jack Ramsay, Renzo Mena
+  AUTHORS: Briellyn Braithwaite, Jack Ramsay, Renzo Mena, Mike Paff
   DESCRIPTION: Preliminary test code for MKR1310
 */
 #include "dfm_mkr1310.h"
@@ -33,6 +33,12 @@
 RTCZero rtc;
 MND_Compact mnd;
 ADXL345 *adxl;
+
+//Data collection items
+#define SIZE 1000           //The size of the array we're storing the accelerometer data in
+int accel_location = 0;     //The location in the array of the latest reading from the accelerometer. Should never be larger that (SIZE - 1)
+AccelData dataCollection[SIZE];     //The array that holds all the data
+
 
 int DC_offset = 0;
 double Z_Power_Samples[ADXL_SAMPLE_LENGTH];
@@ -212,7 +218,11 @@ void loop_mkr1310() {
                 // wait for the pin to go high and take sample
                 // implement a fast, 1/2 sec watchdog here.
                 ;
+                //datacollection[i] = Z_Power_Samples[i];
+                //accel_location = i;
+                //Are we not recording the data yet?
             i++;
+            
         }
 
         // Renzo's algorithm
@@ -252,7 +262,6 @@ void loop_mkr1310() {
             severityLevel++; // always clears 0, going from -1 to 0
         }
         // After Data Collection mode
-
         // wait for settle ()
         // then
 

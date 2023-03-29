@@ -321,6 +321,7 @@ void test_detection(void) {
 #define THRESHOLD_Y1 75   // First Threshold for the Y-axis
 #define THRESHOLD_Z1 75   // First Threshold for the Z-axis
 
+    AccelData accelerometer[SIZE]; //Data from the accelerometer.
     int x_accelerometer[SIZE]; // Data from the accelerometer's x-axis
     int y_accelerometer[SIZE]; // Data from the accelerometer's y-axis
     int z_accelerometer[SIZE]; // Data from the accelerometer's z-axis
@@ -772,6 +773,7 @@ void frssitomatlab(Serial_ &s, const MonitoringNodeData d, const ReceiverExtras 
     for (int nb = 0; nb < sizeof(TestPing); ++nb)
         s.write((unsigned char) ((uint8_t *) &p)[nb]);
 }
+
 #endif
 
 #if defined(ARDUINO_NANO_RP2040_CONNECT)
