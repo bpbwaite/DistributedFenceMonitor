@@ -34,11 +34,11 @@ RTCZero rtc;
 MND_Compact mnd;
 ADXL345 *adxl;
 
-//Data collection items
-#define SIZE 1000           //The size of the array we're storing the accelerometer data in
-int accel_location = 0;     //The location in the array of the latest reading from the accelerometer. Should never be larger that (SIZE - 1)
-AccelData dataCollection[SIZE];     //The array that holds all the data
-
+// Data collection items
+#define SIZE 1000 // The size of the array we're storing the accelerometer data in
+int accel_location =
+    0; // The location in the array of the latest reading from the accelerometer. Should never be larger that (SIZE - 1)
+// AccelData dataCollection[SIZE]; // The array that holds all the data
 
 int DC_offset = 0;
 double Z_Power_Samples[ADXL_SAMPLE_LENGTH];
@@ -46,6 +46,7 @@ int severityLevel = 0;
 
 // isr related items
 volatile bool motionDetected = false;
+
 void wakeuphandler(void) {
     motionDetected = true;
 }
@@ -182,16 +183,17 @@ void setup_mkr1310() {
 
     // ISR ATTACHMENT
     motionDetected = false;
-    LowPower.attachInterruptWakeup(
-        PIN_INTERRUPT, wakeuphandler, RISING); // wake up on pin 7 rising edge and attach interrupt to pin 7 and sets
-                                               // handler of isr to the function named isr
+    // LowPower.attachInterruptWakeup(
+    //     PIN_INTERRUPT, wakeuphandler, RISING); // wake up on pin 7 rising edge and attach interrupt to pin 7 and sets
+    //  handler of isr to the function named isr
+
     // FINALIZE SETUP
     indicateOff();
     Serial.println(F("Notice: Node Setup Complete"));
 
-    if (Serial)
-        Serial.end();
-    USBDevice.detach();
+    // if (Serial)
+    //     Serial.end();
+    // USBDevice.detach();
 }
 
 void loop_mkr1310() {
@@ -200,8 +202,11 @@ void loop_mkr1310() {
 
     // Boolean motionDetected that is changed from the ISR
     if (motionDetected) {
+        Serial.println("entered motion loop");
         motionDetected = false;
         // Data Collection mode
+        detachInterrupt(digitalPinToInterrupt(PIN_INTERRUPT));
+
         adxl->setInterrupt(ADXL345_ACTIVITY, false);  // disabling activity interrupt
         adxl->setInterrupt(ADXL345_DATA_READY, true); // enabling data ready interrupt
         // collection logic here
@@ -210,44 +215,23 @@ void loop_mkr1310() {
 
         adxl->getInterruptSource();
         while (i < ADXL_SAMPLE_LENGTH) {
-
             adxl->readAccel(&x, &y, &z);
-            Z_Power_Samples[i % ADXL_SAMPLE_LENGTH] = sq((z + DC_offset) * GRAVITY / (double) ADXL_LSB_PER_G_Z);
+            Z_Power_Samples[i] = sq((z + DC_offset) * GRAVITY / (double) ADXL_LSB_PER_G_Z);
 
             while (!digitalRead(PIN_INTERRUPT))
                 // wait for the pin to go high and take sample
                 // implement a fast, 1/2 sec watchdog here.
                 ;
-                //datacollection[i] = Z_Power_Samples[i];
-                //accel_location = i;
-                //Are we not recording the data yet?
+            // datacollection[i] = Z_Power_Samples[i];
+            // accel_location = i;
+            // Are we not recording the data yet?
             i++;
-            
         }
 
         // Renzo's algorithm
-        // linspace(0, (2*9.81)^2, 16)
-        const double thresholdZ[16] = {
-            0,
-            25.66,
-            51.32,
-            76.98,
-            102.65,
-            128.31,
-            153.97,
-            179.64,
-            205.30,
-            230.96,
-            256.62,
-            282.29,
-            307.95,
-            333.61,
-            359.28,
-            384.94,
-        };
 
         double currentMax = 0;
-        severityLevel     = -1;
+        severityLevel     = 0;
 
         for (i = 0; i < ADXL_SAMPLE_LENGTH; ++i) {
             if (Z_Power_Samples[i] > currentMax) {
@@ -256,19 +240,24 @@ void loop_mkr1310() {
             }
         }
         // following for-loop should loop until thresholdZ is no longer passed
-        for (i = 1; i < 16; ++i) {
+        for (i = 0; i < 15; ++i) {
             if (currentMax < thresholdZ[i])
                 break;
-            severityLevel++; // always clears 0, going from -1 to 0
+            severityLevel++;
         }
         // After Data Collection mode
         // wait for settle ()
         // then
 
+        Serial.print("severity determined to be ");
+        Serial.println(severityLevel);
+
         adxl->setInterrupt(ADXL345_ACTIVITY, true);    // enabling activity interrupt
         adxl->setInterrupt(ADXL345_DATA_READY, false); // disabling data ready interrupt
+        Serial.println("exit motion loop");
     }
 
+    errorOn();
     // get basic status indicators
     mnd.packetnum += 1;
     mnd.upTime = millis();
@@ -276,7 +265,9 @@ void loop_mkr1310() {
 
     // compact-byte types:
     setSeverity(mnd, severityLevel);
-    setTSLC(mnd, (TSLC / 1000 / 60));
+    severityLevel = 0; // and reset
+
+    setTSLC(mnd, (4));
     setTemperature(mnd, 25);
 
     AccelData dum;
@@ -289,17 +280,30 @@ void loop_mkr1310() {
     setBatt(mnd,
             100 * (((ADC_VREF * (bat_raw) / ((0b1 << ADC_BITS) - 1)) * (R_top + R_bot) / R_bot) - VBAT_ZERO) /
                 (VBAT_HUNDRED - VBAT_ZERO));
-
+    setBatt(mnd, 75);
     setConnections(mnd, 1);
 
-    // send status indicators
+    Serial.println("Compact Struct Readout");
+    Serial.print("0b");
+    for (int j = 31; j >= 0; --j) {
+        Serial.print(mnd.all_states & 0b1 << j ? '1' : '0');
+    }
+    Serial.println();
 
+    // send status indicators
     LoRa.beginPacket();
     LoRa.write((uint8_t *) &mnd, sizeof(MND_Compact)); // Write the data to the packet
     LoRa.endPacket(false);                             // false to block while sending
-    LoRa.sleep();
+    errorOff();
 
-    LowPower.deepSleep(SLEEP_TIME_MS);
+    LoRa.sleep();
+    // LowPower.attachInterruptWakeup(PIN_INTERRUPT, wakeuphandler, RISING);
+    // LowPower.deepSleep(SLEEP_TIME_MS);
+
+    attachInterrupt(PIN_INTERRUPT, wakeuphandler, RISING);
+    motionDetected = false;
+    adxl->getInterruptSource();
+    delay(2000);
 }
 
 #endif
