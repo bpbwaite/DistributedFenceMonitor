@@ -15,10 +15,10 @@
 // GENERAL SYSTEM CONFIGURATION
 #define DEBUG         true
 #define SERIALBAUD    115200
-#define SERIALTIMEOUT 10000
+#define SERIALTIMEOUT 2500
 
 // TIMING CONFIGURATION
-#define SLEEP_TIME_MS      15000
+#define SLEEP_TIME_MS      2000
 #define GMTOFFSET          -25200
 #define ADXL_SAMPLE_LENGTH 350 // The number of accelerometer readings to hold
 
@@ -47,11 +47,29 @@
 // INERTIAL MEASUREMENT CONSTANTS
 #define ADXL_FALLING 1
 #define ADXL_RISING  0
+// linspace(0, (2*9.81)^2, 16)
+const double thresholdZ[15] = {
+    25.66,
+    51.32,
+    76.98,
+    102.65,
+    128.31,
+    153.97,
+    179.64,
+    205.30,
+    230.96,
+    256.62,
+    282.29,
+    307.95,
+    333.61,
+    359.28,
+    384.94,
+};
 
 // INERTIAL MEASUREMENT SETTINGS
 #define ADXL_SENSITIVITY 2 // 2, 4, 8, 16 (g)
 #define ADXL_FULLRESBIT  1
-#define ADXL_ACT_THRESH  0x0005 // 62.5mg per increment
+#define ADXL_ACT_THRESH  0x0006 // 62.5mg per increment
 #define ADXL_TIME_REST   2
 #define ADXL_LSB_PER_G_Z 256.0
 #define GRAVITY          9.81

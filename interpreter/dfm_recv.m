@@ -35,7 +35,7 @@ timeout = 30; % s
 gmtoffset = -25200; % s
 
 %% Connection
-s = serialport(serialportlist', 115200);
+s = serialport("COM5", 115200);
 s.Timeout = timeout;
 
 disp("Setup complete!")
@@ -95,7 +95,7 @@ if show_list
     fprintf('RTC: %s\n',...
         string(datetime(databuf.epoch + gmtoffset,...
         'convertfrom', 'posixtime', 'Format', 'MM-dd-yyyy HH:mm:ss')));
-    fprintf('Calibration: %d min ago', databuf.tslc);
+    fprintf('Calibration: %d min ago\n', databuf.tslc);
     
     fprintf('SyncWord: 0x%04X\n', databuf.sw);
     fprintf('Bandwidth: %dkHz\n', databuf.bw/1000);

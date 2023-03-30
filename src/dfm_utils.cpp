@@ -100,8 +100,8 @@ void setSeverity(MND_Compact &d, int severity) {
         severity = 0;
     if (severity > 15)
         severity = 15;
-    d.all_states = d.all_states & ~0xF0000000;
-    d.all_states = d.all_states & (severity << 28);
+    d.all_states &= ~0xF0000000;
+    d.all_states |= (severity << 28);
 }
 void setTSLC(MND_Compact &d, int min) {
     if (min < 0)
@@ -142,6 +142,27 @@ void setConnections(MND_Compact &d, int amt) {
         amt = 63;
     d.all_states &= ~0x000000FC;
     d.all_states |= (amt << 2);
+}
+int getSeverity(MND_Compact &d) {
+    return (d.all_states & 0xF0000000) >> 28;
+}
+int getTSLC(MND_Compact &d) {
+    return (d.all_states & 0x0F000000) >> 24;
+}
+bool getNeedRTC(MND_Compact &d) {
+    return (d.all_states & 0x00800000);
+}
+int getTemperature(MND_Compact &d) {
+    return (d.all_states & 0x007F0000) >> 16;
+}
+bool getIMUBit(MND_Compact &d) {
+    return (d.all_states & 0x00008000);
+}
+int getBatt(MND_Compact &d) {
+    return (d.all_states & 0x00007F00) >> 8;
+}
+int getConnections(MND_Compact &d) {
+    return (d.all_states & 0x000000FC) >> 2;
 }
 
 void epchtostr(char *p, uint32_t epc) {
@@ -256,27 +277,5 @@ void epchtostr(char *p, uint32_t epc) {
 //     for (int nb = 0; nb < sizeof(ReceiverExtras); ++nb)
 //         s.write((unsigned char) ((uint8_t *) &e)[nb]);
 // }
-
-int getSeverity(MND_Compact &d) {
-    return (d.all_states & 0xF0000000) >> 28;
-}
-int getTSLC(MND_Compact &d) {
-    return (d.all_states & 0x0F000000) >> 24;
-}
-bool getNeedRTC(MND_Compact &d) {
-    return (d.all_states & 0x00800000);
-}
-int getTemperature(MND_Compact &d) {
-    return (d.all_states & 0x007F0000) >> 16;
-}
-bool getIMUBit(MND_Compact &d) {
-    return (d.all_states & 0x00008000);
-}
-int getBatt(MND_Compact &d) {
-    return (d.all_states & 0x00007F00) >> 8;
-}
-int getConnections(MND_Compact &d) {
-    return (d.all_states & 0x000000FC) >> 2;
-}
 
 #endif
