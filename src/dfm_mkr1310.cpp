@@ -35,10 +35,6 @@ MND_Compact mnd;
 ADXL345 *adxl;
 
 // Data collection items
-#define SIZE 1000 // The size of the array we're storing the accelerometer data in
-int accel_location =
-    0; // The location in the array of the latest reading from the accelerometer. Should never be larger that (SIZE - 1)
-// AccelData dataCollection[SIZE]; // The array that holds all the data
 
 int DC_offset = 0;
 double Z_Power_Samples[ADXL_SAMPLE_LENGTH];

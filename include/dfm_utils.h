@@ -102,6 +102,9 @@ typedef struct {
 uint8_t maxPayload(int = REGION_TAG_US, int = SPREADFACTOR, long = CHIRPBW);
 double getTOA(int, int = SPREADFACTOR, long = CHIRPBW, int = PREAMBLELEN, float = CODERATE, bool = USING_CRC);
 
+double bwCodeToFs(byte bwc);
+int getDCOffset(ADXL345 *, double);
+
 void setSeverity(MND_Compact &, int);
 void setTSLC(MND_Compact &, int);
 void setNeedRTC(MND_Compact &, bool);

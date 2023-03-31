@@ -20,7 +20,8 @@
 // TIMING CONFIGURATION
 #define SLEEP_TIME_MS      2000
 #define GMTOFFSET          -25200
-#define ADXL_SAMPLE_LENGTH 350 // The number of accelerometer readings to hold
+#define ADXL_SAMPLE_LENGTH 1000 // The number of accelerometer readings to hold
+#define ADXL_DC_CAPTURE    500 // Samples to take when running DC calibration
 
 // BATTERY POWER CONFIGURATION
 #define VBAT_HUNDRED 4.10

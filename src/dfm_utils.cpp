@@ -11,6 +11,7 @@
 #include <LoRa.h>
 #include <SPI.h>
 #include <time.h>
+#include <SparkFun_ADXL345.h>
 
 void indicateOn() {
     digitalWrite(PIN_STATUSLED, HIGH);
@@ -38,6 +39,90 @@ void ERROR_OUT(uint8_t sequence) {
         delay(dot_time);
     }
     delay(slack_time);
+}
+
+double bwCodeToFs(byte bwc) {
+    double Fs = -1;
+
+    switch (bwc) {
+    case (ADXL345_BW_1600):
+        Fs = 3200;
+        break;
+    case (ADXL345_BW_800):
+        Fs = 1600;
+        break;
+    case (ADXL345_BW_400):
+        Fs = 800;
+        break;
+    case (ADXL345_BW_200):
+        Fs = 400;
+        break;
+    case (ADXL345_BW_100):
+        Fs = 200;
+        break;
+    case (ADXL345_BW_50):
+        Fs = 100;
+        break;
+    case (ADXL345_BW_25):
+        Fs = 50;
+        break;
+    case (ADXL345_BW_12_5):
+        Fs = 25;
+        break;
+    case (ADXL345_BW_6_25):
+        Fs = 12.50;
+        break;
+    case (ADXL345_BW_3_13):
+        Fs = 6.25;
+        break;
+    case (ADXL345_BW_1_56):
+        Fs = 3.13;
+        break;
+    case (ADXL345_BW_0_78):
+        Fs = 1.56;
+        break;
+    case (ADXL345_BW_0_39):
+        Fs = 0.78;
+        break;
+    case (ADXL345_BW_0_20):
+        Fs = 0.39;
+        break;
+    case (ADXL345_BW_0_10):
+        Fs = 0.20;
+        break;
+    case (ADXL345_BW_0_05):
+        Fs = 0.10;
+        break;
+    default:
+        break;
+    }
+    return Fs;
+}
+int getDCOffset(ADXL345 *adxl, double t_increment) {
+    // function is incomplete do not call!
+    static int temp[ADXL_DC_CAPTURE]; // List of samples to use in calculating the offset
+    int num_ranges = (int) floor(ADXL_DC_CAPTURE / t_increment);
+    int list_of_ranges[num_ranges]; // is this gona push onto stack?
+
+    double Fs       = bwCodeToFs(adxl->get_bw_code()); // Frequency of the samples
+    int inc_samples = floor(t_increment * Fs);
+
+    // capture data here <<<
+
+    for (int n = 0; n < num_ranges; ++n) {
+        int region_start = floor(n * inc_samples);
+        int region_end   = min(region_start + inc_samples, ADXL_DC_CAPTURE - 1);
+
+        // find the minimum over the current region
+        int zmax = 0, zmin = 0;
+        for (int i = region_start; i < region_end; ++i) {
+            if (temp[i] > zmax)
+                zmax = temp[i];
+            else if (temp[i] < zmin)
+                zmin = temp[i];
+        }
+        list_of_ranges[n] = zmax - zmin;
+    }
 }
 
 uint8_t maxPayload(int region, int sf, long bw) {
