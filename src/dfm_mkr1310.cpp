@@ -48,10 +48,19 @@ void wakeuphandler(void) {
 }
 
 // timing related items
+
+volatile unsigned long TOLR = 0; // time of last real-time-clock setting
+inline unsigned long TSLR() {
+    return millis() - TOLR;
+} // time since last calibration
 volatile unsigned long TOLC = 0; // time of last calibration
 inline unsigned long TSLC() {
     return millis() - TOLC;
-}; // time since last calibration
+} // time since last calibration
+volatile unsigned long TOLS = 0; // time of last sample
+inline unsigned long TSLS() {
+    return millis() - TOLS;
+} // time since last sample
 
 void setup_mkr1310() {
     // ARDUINO PIN INITIALIZATION
@@ -93,7 +102,6 @@ void setup_mkr1310() {
 
         // check for life
         AccelData dum;
-
         adxl->getInterruptSource();
         adxl->readAccel(&dum.x, &dum.y, &dum.z);
         if ((abs(dum.x) + abs(dum.y) + abs(dum.z)) <= 0) {
@@ -164,6 +172,7 @@ void setup_mkr1310() {
     Serial.println(F("Notice: Node Setup Complete"));
 
     DC_offset = getDCOffset(adxl, 0.5);
+    TOLC      = millis();
 
     // if (Serial)
     //     Serial.end();
@@ -176,7 +185,7 @@ void loop_mkr1310() {
 
     // Boolean motionDetected that is changed from the ISR
     if (motionDetected) {
-        Serial.println("entered motion loop");
+        Serial.println(F("Wakeup was due to motion"));
         motionDetected = false;
         // Data Collection mode
         detachInterrupt(digitalPinToInterrupt(PIN_INTERRUPT));
@@ -192,13 +201,16 @@ void loop_mkr1310() {
             adxl->readAccel(&x, &y, &z);
             Z_Power_Samples[i] = sq((z - DC_offset) * GRAVITY / (double) ADXL_LSB_PER_G_Z);
 
-            while (!digitalRead(PIN_INTERRUPT))
+            TOLS = millis();
+
+            while (!digitalRead(PIN_INTERRUPT) && (TSLS() < 500UL))
                 // wait for the pin to go high and take sample
-                // implement a fast, 1/2 sec watchdog here.
+                // a 1/2 second watchdog is implemented here
                 ;
-            // datacollection[i] = Z_Power_Samples[i];
-            // accel_location = i;
-            // Are we not recording the data yet?
+
+            if (TSLS() > 500UL)
+                Serial.println("Watchdog Error");
+
             i++;
         }
 
@@ -268,12 +280,16 @@ void loop_mkr1310() {
     LoRa.beginPacket();
     LoRa.write((uint8_t *) &mnd, sizeof(MND_Compact)); // Write the data to the packet
     LoRa.endPacket(false);                             // false to block while sending
+    LoRa.sleep();
     errorOff();
 
-    LoRa.sleep();
+    // check if we should recompute the DC offset
+    if (TSLC() > ADXL_CALIBRATION_INTERVAL) {
+        DC_offset = getDCOffset(adxl, CALIBRATION_TIME_SLICE);
+    }
+
     // LowPower.attachInterruptWakeup(PIN_INTERRUPT, wakeuphandler, RISING);
     // LowPower.deepSleep(SLEEP_TIME_MS);
-
     // moved here because any number of sources could've taken over these
     adxl->setInterrupt(ADXL345_ACTIVITY, true);    // enabling activity interrupt
     adxl->setInterrupt(ADXL345_DATA_READY, false); // disabling data ready interrupt
