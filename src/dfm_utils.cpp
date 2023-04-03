@@ -8,6 +8,8 @@
 */
 #ifdef ARDUINO_SAMD_MKRWAN1310
 #include "dfm_utils.h"
+#include "dfm_mkr1310.h"
+
 #include <LoRa.h>
 #include <SPI.h>
 #include <time.h>
@@ -39,6 +41,39 @@ void ERROR_OUT(uint8_t sequence) {
         delay(dot_time);
     }
     delay(slack_time);
+}
+
+void fullResetADXL(ADXL345 *adxl) {
+    adxl->powerOn();
+    adxl->setSpiBit(0); // allow 4-Wire SPI from ADXL to main
+    adxl->setRangeSetting(ADXL_SENSITIVITY);
+    adxl->setFullResBit(ADXL_FULLRESBIT);
+    adxl->set_bw(ADXL345_BW_50);
+    adxl->setInterruptLevelBit(ADXL_RISING); // means the pin RISES on interrupt
+
+    adxl->setActivityAc(1); // AC coupled activitiy
+    adxl->setActivityXYZ(0, 0, 1);
+    adxl->setActivityThreshold(ADXL_ACT_THRESH);
+    adxl->setInactivityAc(1);
+    adxl->setInactivityXYZ(0, 0, 1);
+    adxl->setInactivityThreshold(ADXL_ACT_THRESH);
+    adxl->setTimeInactivity(ADXL_TIME_REST);
+
+    adxl->ActivityINT(1);
+    adxl->InactivityINT(0);
+    adxl->FreeFallINT(0);
+    adxl->doubleTapINT(0);
+    adxl->singleTapINT(0);
+
+    // disable FIFO-related interrupts
+    adxl->setInterrupt(ADXL345_OVERRUNY, false);
+    adxl->setInterrupt(ADXL345_WATERMARK, false);
+    adxl->setInterrupt(ADXL345_DATA_READY, false);
+
+    // initial int map
+    adxl->setInterruptMapping(ADXL345_ACTIVITY, ADXL345_INT1_PIN);
+    adxl->setInterruptMapping(ADXL345_INACTIVITY, ADXL345_INT1_PIN);
+    adxl->setInterruptMapping(ADXL345_DATA_READY, ADXL345_INT1_PIN);
 }
 
 double bwCodeToFs(byte bwc) {
@@ -99,30 +134,97 @@ double bwCodeToFs(byte bwc) {
     return Fs;
 }
 int getDCOffset(ADXL345 *adxl, double t_increment) {
-    // function is incomplete do not call!
-    static int temp[ADXL_DC_CAPTURE]; // List of samples to use in calculating the offset
-    int num_ranges = (int) floor(ADXL_DC_CAPTURE / t_increment);
-    int list_of_ranges[num_ranges]; // is this gona push onto stack?
+    // STATIC VARIABLES
+    static int Z_Raw_Samples[ADXL_DC_CAPTURE]; // List of samples to use in calculating the offset
+                                               // in the future, perhaps use the same memory as Z_Power_Samples
+    const int raw_max = ADXL_SENSITIVITY * ADXL_LSB_PER_G_Z;
+    const int raw_min = -1 * raw_max;
 
-    double Fs       = bwCodeToFs(adxl->get_bw_code()); // Frequency of the samples
-    int inc_samples = floor(t_increment * Fs);
+    // DATA COLLECTION SECTION
+    Serial.print(millis());
+    Serial.println(": Starting data collect");
 
-    // capture data here <<<
+    detachInterrupt(digitalPinToInterrupt(PIN_INTERRUPT));
+    adxl->setInterrupt(ADXL345_ACTIVITY, false);  // disabling activity interrupt
+    adxl->setInterrupt(ADXL345_DATA_READY, true); // enabling data ready interrupt
 
-    for (int n = 0; n < num_ranges; ++n) {
-        int region_start = floor(n * inc_samples);
-        int region_end   = min(region_start + inc_samples, ADXL_DC_CAPTURE - 1);
-
-        // find the minimum over the current region
-        int zmax = 0, zmin = 0;
-        for (int i = region_start; i < region_end; ++i) {
-            if (temp[i] > zmax)
-                zmax = temp[i];
-            else if (temp[i] < zmin)
-                zmin = temp[i];
-        }
-        list_of_ranges[n] = zmax - zmin;
+    int x, y, z, i = 0;
+    adxl->getInterruptSource();
+    while (i < ADXL_DC_CAPTURE) {
+        adxl->readAccel(&x, &y, &z);
+        Z_Raw_Samples[i] = z;
+        while (!digitalRead(PIN_INTERRUPT))
+            // wait for the pin to go high and take sample
+            // TODO implement a fast, 1/2 sec watchdog here.
+            ;
+        i++;
     }
+
+    // OFFSET COMPUTATION SECTION
+    int bias = 0; // value to return (LSBs)
+
+    int region_start; // used when looking at sections of data
+    int region_end;   // used when looking at sections of data
+
+    double Fs      = bwCodeToFs(adxl->get_bw_code()); // Frequency of the samples
+    int num_ranges = (int) ceil(ADXL_DC_CAPTURE / Fs / t_increment);
+    int list_of_ranges[num_ranges];
+    int region_samples = floor(t_increment * Fs);
+    Serial.println(Fs);
+    Serial.println(num_ranges);
+    Serial.print("a region has ");
+    Serial.print(region_samples);
+    Serial.println(" samples.");
+    Serial.print(millis());
+    Serial.println(": going into computations");
+    Serial.print("list of ranges: ");
+
+    // find the max and min of each region to get the range
+    for (int n = 0; n < num_ranges; ++n) {
+        region_start = floor(n * region_samples);
+        region_end   = min(region_start + region_samples, ADXL_DC_CAPTURE - 1);
+
+        // find the min/max over the current region
+        int zmax = raw_min, zmin = raw_max;
+        for (int m = region_start; m < region_end; ++m) {
+            if (Z_Raw_Samples[m] > zmax)
+                zmax = Z_Raw_Samples[m];
+            if (Z_Raw_Samples[m] < zmin)
+                zmin = Z_Raw_Samples[m];
+        }
+
+        list_of_ranges[n] = zmax - zmin;
+        Serial.print(list_of_ranges[n]);
+        Serial.print(", ");
+    }
+    // find the value of the quiestest region
+    int rmin = raw_max;
+    for (int n = 0; n < num_ranges; ++n) {
+        if (list_of_ranges[n] < rmin)
+            rmin = list_of_ranges[n];
+    }
+    // find the index of that value
+    int r_quiet = 0;
+    for (r_quiet = 0; r_quiet < num_ranges; ++r_quiet) {
+        if (list_of_ranges[r_quiet] == rmin)
+            break;
+    }
+    Serial.print("using index ");
+    Serial.println(r_quiet);
+    // find the average of that region
+    region_start    = r_quiet * region_samples;
+    region_end      = min(region_start + region_samples, ADXL_DC_CAPTURE - 1);
+    int accumulator = 0;
+    for (int m = region_start; m < region_end; ++m) {
+        accumulator += Z_Raw_Samples[m];
+    }
+
+    bias = accumulator / region_samples;
+    Serial.print(millis());
+    Serial.print(": A bias of ");
+    Serial.println(bias);
+
+    return bias;
 }
 
 uint8_t maxPayload(int region, int sf, long bw) {

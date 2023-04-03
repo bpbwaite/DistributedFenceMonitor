@@ -49,9 +49,26 @@ void wakeuphandler(void) {
 
 // timing related items
 volatile unsigned long TOLC = 0; // time of last calibration
-volatile unsigned long TSLC = 0; // time since last calibration
+inline unsigned long TSLC() {
+    return millis() - TOLC;
+}; // time since last calibration
 
 void setup_mkr1310() {
+    // ARDUINO PIN INITIALIZATION
+
+    analogReadResolution(ADC_BITS);
+
+    pinMode(PIN_LORAMODE, INPUT_PULLUP);
+    pinMode(PIN_SW1, INPUT_PULLUP);
+    pinMode(PIN_BATADC, INPUT);
+    pinMode(PIN_INTERRUPT, INPUT_PULLDOWN);
+    pinMode(PIN_STATUSLED, INPUT);
+    pinMode(PIN_ERRORLED, OUTPUT);
+
+    indicateOn();
+    errorOff();
+
+    // RTC
 
     rtc.begin();
     if (SET_RTC) {
@@ -66,54 +83,13 @@ void setup_mkr1310() {
     }
     Serial.println(F("Notice: Serial Interface Connected!"));
 
-    // ARDUINO PIN INITIALIZATION
-
-    analogReadResolution(ADC_BITS);
-
-    pinMode(PIN_LORAMODE, INPUT_PULLUP);
-    pinMode(PIN_SW1, INPUT_PULLUP);
-    pinMode(PIN_BATADC, INPUT);
-    pinMode(PIN_INTERRUPT, INPUT_PULLDOWN);
-    pinMode(PIN_STATUSLED, INPUT);
-    pinMode(PIN_ERRORLED, OUTPUT);
-    indicateOn();
-    errorOff();
-
     // ADXL INITIALIZATION
+
     while (1) { // may take multiple attempts
 
         adxl = new ADXL345(PIN_ADXLCS1);
 
-        adxl->powerOn();
-        adxl->setSpiBit(0); // 4-Wire SPI
-        adxl->setRangeSetting(ADXL_SENSITIVITY);
-        adxl->setFullResBit(ADXL_FULLRESBIT);
-        adxl->set_bw(ADXL345_BW_50);
-        adxl->setInterruptLevelBit(ADXL_RISING); // means the pin RISES on interrupt
-
-        adxl->setActivityAc(1); // AC coupled activitiy
-        adxl->setActivityXYZ(0, 0, 1);
-        adxl->setActivityThreshold(ADXL_ACT_THRESH);
-        adxl->setInactivityAc(1);
-        adxl->setInactivityXYZ(0, 0, 1);
-        adxl->setInactivityThreshold(ADXL_ACT_THRESH);
-        adxl->setTimeInactivity(ADXL_TIME_REST);
-
-        adxl->ActivityINT(1);
-        adxl->InactivityINT(0);
-        adxl->FreeFallINT(0);
-        adxl->doubleTapINT(0);
-        adxl->singleTapINT(0);
-
-        // disable FIFO-related interrupts
-        adxl->setInterrupt(ADXL345_OVERRUNY, false);
-        adxl->setInterrupt(ADXL345_WATERMARK, false);
-        adxl->setInterrupt(ADXL345_DATA_READY, false);
-
-        // initial int map
-        adxl->setInterruptMapping(ADXL345_ACTIVITY, ADXL345_INT1_PIN);
-        adxl->setInterruptMapping(ADXL345_INACTIVITY, ADXL345_INT1_PIN);
-        adxl->setInterruptMapping(ADXL345_DATA_READY, ADXL345_INT1_PIN);
+        fullResetADXL(adxl);
 
         // check for life
         AccelData dum;
@@ -187,6 +163,8 @@ void setup_mkr1310() {
     indicateOff();
     Serial.println(F("Notice: Node Setup Complete"));
 
+    DC_offset = getDCOffset(adxl, 0.5);
+
     // if (Serial)
     //     Serial.end();
     // USBDevice.detach();
@@ -212,7 +190,7 @@ void loop_mkr1310() {
         adxl->getInterruptSource();
         while (i < ADXL_SAMPLE_LENGTH) {
             adxl->readAccel(&x, &y, &z);
-            Z_Power_Samples[i] = sq((z + DC_offset) * GRAVITY / (double) ADXL_LSB_PER_G_Z);
+            Z_Power_Samples[i] = sq((z - DC_offset) * GRAVITY / (double) ADXL_LSB_PER_G_Z);
 
             while (!digitalRead(PIN_INTERRUPT))
                 // wait for the pin to go high and take sample
@@ -235,6 +213,8 @@ void loop_mkr1310() {
                 currentMax = Z_Power_Samples[i];
             }
         }
+        Serial.print("Max of ");
+        Serial.println(currentMax);
         // following for-loop should loop until thresholdZ is no longer passed
         for (i = 0; i < 15; ++i) {
             if (currentMax < thresholdZ[i])
@@ -248,8 +228,6 @@ void loop_mkr1310() {
         Serial.print("severity determined to be ");
         Serial.println(severityLevel);
 
-        adxl->setInterrupt(ADXL345_ACTIVITY, true);    // enabling activity interrupt
-        adxl->setInterrupt(ADXL345_DATA_READY, false); // disabling data ready interrupt
         Serial.println("exit motion loop");
     }
 
@@ -279,12 +257,12 @@ void loop_mkr1310() {
     setBatt(mnd, 75);
     setConnections(mnd, 1);
 
-    Serial.println("Compact Struct Readout");
-    Serial.print("0b");
-    for (int j = 31; j >= 0; --j) {
-        Serial.print(mnd.all_states & 0b1 << j ? '1' : '0');
-    }
-    Serial.println();
+    // Serial.println("Compact Struct Readout");
+    // Serial.print("0b");
+    // for (int j = 31; j >= 0; --j) {
+    //     Serial.print(mnd.all_states & 0b1 << j ? '1' : '0');
+    // }
+    // Serial.println();
 
     // send status indicators
     LoRa.beginPacket();
@@ -296,9 +274,12 @@ void loop_mkr1310() {
     // LowPower.attachInterruptWakeup(PIN_INTERRUPT, wakeuphandler, RISING);
     // LowPower.deepSleep(SLEEP_TIME_MS);
 
+    // moved here because any number of sources could've taken over these
+    adxl->setInterrupt(ADXL345_ACTIVITY, true);    // enabling activity interrupt
+    adxl->setInterrupt(ADXL345_DATA_READY, false); // disabling data ready interrupt
     attachInterrupt(PIN_INTERRUPT, wakeuphandler, RISING);
-    motionDetected = false;
-    adxl->getInterruptSource();
+    motionDetected = false;     // attaching an interrupt may cause it to run. unset it here.
+    adxl->getInterruptSource(); // triple check
     delay(2000);
 }
 

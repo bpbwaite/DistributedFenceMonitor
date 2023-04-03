@@ -11,6 +11,7 @@
 #ifdef ARDUINO_SAMD_MKRWAN1310
 
 #include <Arduino.h>
+#include <SparkFun_ADXL345.h>
 #include "dfm_mkr1310.h"
 
 // Structures
@@ -102,7 +103,9 @@ typedef struct {
 uint8_t maxPayload(int = REGION_TAG_US, int = SPREADFACTOR, long = CHIRPBW);
 double getTOA(int, int = SPREADFACTOR, long = CHIRPBW, int = PREAMBLELEN, float = CODERATE, bool = USING_CRC);
 
-double bwCodeToFs(byte bwc);
+void fullResetADXL(ADXL345 *);
+
+double bwCodeToFs(byte);
 int getDCOffset(ADXL345 *, double);
 
 void setSeverity(MND_Compact &, int);
