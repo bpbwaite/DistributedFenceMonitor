@@ -25,7 +25,7 @@
 #define ADXL_SAMPLE_TIMEOUT 500  // ms
 
 // CALIBRATOR SETTINGS
-#define CALIBRATION_TIME_SLICE    0.75   // seconds
+#define CALIBRATION_TIME_SLICE    0.75     // seconds
 #define ADXL_CALIBRATION_INTERVAL 900000UL // ms, 900000 ~= 15 minutes
 
 // BATTERY POWER CONFIGURATION
@@ -70,6 +70,23 @@ const double thresholdZ[15] = {
     333.61,
     359.28,
     384.94,
+};
+const double thresholdZ_logarithmic[15] = {
+    1.4507,
+    2.1046,
+    3.0532,
+    4.4294,
+    6.4259,
+    9.3223,
+    13.5242,
+    19.6200,
+    28.4634,
+    41.2927,
+    59.9047,
+    86.9057,
+    126.0770,
+    182.9040,
+    265.3448,
 };
 
 // INERTIAL MEASUREMENT SETTINGS
