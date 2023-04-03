@@ -44,7 +44,7 @@ for n = 1:length(list_of_ranges)
 end
 
 [~, idx] = min(list_of_ranges);
-dx_start = floor(idx*Fs);
+dx_start = floor(idx*Fs*inc_samples);
 dx_end = min(dx_start + inc_samples, length(z));
 bias = mean(z(dx_start:dx_end));
 
