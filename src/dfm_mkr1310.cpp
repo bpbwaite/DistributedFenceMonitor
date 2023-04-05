@@ -20,6 +20,7 @@
 #include <Arduino_PMIC.h>
 #include <LoRa.h>
 #include <RTCZero.h>
+// #include <WDTZero.h>
 #include <SPI.h>
 #include <SparkFun_ADXL345.h>
 #include <Wire.h>
@@ -42,6 +43,7 @@ int severityLevel = 0;
 
 // isr related items
 volatile bool motionDetected = false;
+volatile bool need_reattach  = false;
 
 void wakeuphandler(void) {
     motionDetected = true;
@@ -63,6 +65,7 @@ inline unsigned long TSLS() {
 } // time since last sample
 
 void setup_mkr1310() {
+
     // ARDUINO PIN INITIALIZATION
 
     analogReadResolution(ADC_BITS);
@@ -90,7 +93,11 @@ void setup_mkr1310() {
         while (!Serial && millis() < SERIALTIMEOUT)
             yield();
     }
-    Serial.println(F("Notice: Serial Interface Connected!"));
+    Serial.println(F("Serial Interface Connected!"));
+
+    // CONFIGURE WATCHDOG TIMER IF APPLICABLE
+    // wdt.setup(WDT_HARDCYCLE8S);
+    // wdt.clear();
 
     // ADXL INITIALIZATION
 
@@ -111,6 +118,8 @@ void setup_mkr1310() {
         else
             break;
     }
+    adxlMode(adxl, ADXL_MOTION);
+
     // LORA INITIALIZATION
 
     // calculate which channel to use first
@@ -122,7 +131,7 @@ void setup_mkr1310() {
     else {
         freq = LoRaChannelsEU[7];
     }
-    Serial.print(F("Notice: Using "));
+    Serial.print(F("Using "));
     Serial.print(freq / 1000000.0, 1);
     Serial.println(F("MHz channel"));
 
@@ -141,13 +150,13 @@ void setup_mkr1310() {
 
     if (USING_CRC) {
         LoRa.enableCrc();
-        Serial.println(F("Notice: CRC Enabled"));
+        Serial.println(F("CRC Enabled"));
     }
     else {
         LoRa.disableCrc();
-        Serial.println(F("Notice: CRC Disabled"));
+        Serial.println(F("CRC Disabled"));
     }
-    Serial.println(F("Notice: LoRa Module Operational"));
+    Serial.println(F("LoRa Module Operational"));
 
     // POWER MANAGER INITIALIZATION
 
@@ -155,28 +164,30 @@ void setup_mkr1310() {
     // here
     PMIC.end();
 
-    // COLLECT STRUCT PARAMETERS
+    // COLLECT SOME STRUCT PARAMETERS
 
     mnd.ID         = MY_IDENTIFIER;
     mnd.packetnum  = 0;
     mnd.all_states = 0x0F80E402;
 
-    // ISR ATTACHMENT
-    motionDetected = false;
-    LowPower.attachInterruptWakeup(
-        PIN_INTERRUPT, wakeuphandler, RISING); // wake up on pin 7 rising edge and attach interrupt to pin 7 and sets
-    //  handler of isr to the function named isr
-
-    // FINALIZE SETUP
+    // CALIBRATE FOR BIAS
     DC_offset = getDCOffset(adxl, CALIBRATION_TIME_SLICE);
     TOLC      = millis();
 
-    indicateOff();
-    Serial.println(F("Notice: Node Setup Complete"));
+    // ISR ATTACHMENT
+    motionDetected = false;
+    LowPower.attachInterruptWakeup(PIN_INTERRUPT, wakeuphandler, RISING); // wake up on pin 7 rising
 
-    if (Serial)
-        Serial.end();
-    USBDevice.detach();
+    // FINALIZE
+    indicateOff();
+    Serial.println(F("Node Setup Complete"));
+
+    if (!DEBUG) {
+        if (Serial)
+            Serial.end();
+
+        USBDevice.detach();
+    }
 }
 
 void loop_mkr1310() {
@@ -185,19 +196,28 @@ void loop_mkr1310() {
 
     // Boolean motionDetected that is changed from the ISR
     if (motionDetected) {
-        // Serial.println(F("Wakeup was due to motion"));
-        motionDetected = false;
-        // Data Collection mode
-        detachInterrupt(digitalPinToInterrupt(PIN_INTERRUPT));
-
-        adxl->setInterrupt(ADXL345_ACTIVITY, false);  // disabling activity interrupt
-        adxl->setInterrupt(ADXL345_DATA_READY, true); // enabling data ready interrupt
-        // collection logic here
+        // collection logic variables
         int i = 0;
         int x, y, z;
 
+        adxl->readAccel(&x, &y, &z);
+        Serial.print("Z=");
+        Serial.print(z);
+        Serial.print("/");
+        Serial.println(DC_offset);
+
+        Serial.println(F("Wakeup was due to motion"));
+        motionDetected = false;
+        // Data Collection mode
+        detachInterrupt(digitalPinToInterrupt(PIN_INTERRUPT));
+        need_reattach = true;
+
+        // collect data:
+        adxlMode(adxl, ADXL_COLLECTION);
         adxl->getInterruptSource();
         while (i < ADXL_SAMPLE_LENGTH) {
+            digitalWrite(PIN_STATUSLED, !digitalRead(PIN_STATUSLED));
+
             adxl->readAccel(&x, &y, &z);
             Z_Power_Samples[i] = sq((z - DC_offset) * GRAVITY / (double) ADXL_LSB_PER_G_Z);
 
@@ -207,10 +227,6 @@ void loop_mkr1310() {
                 // wait for the pin to go high and take sample
                 // a 1/2 second watchdog is implemented here
                 ;
-
-            if (TSLS() > 500UL)
-                ;
-            // Serial.println("Watchdog Error");
 
             i++;
         }
@@ -226,22 +242,19 @@ void loop_mkr1310() {
                 currentMax = Z_Power_Samples[i];
             }
         }
-        // Serial.print("Max of ");
-        // Serial.println(currentMax);
+        Serial.print("Max of ");
+        Serial.println(currentMax);
         //  following for-loop should loop until thresholdZ is no longer passed
         for (i = 0; i < 15; ++i) {
             if (currentMax < thresholdZ_logarithmic[i])
                 break;
             severityLevel++;
         }
-        // After Data Collection mode
-        // wait for settle ()
-        // then
 
-        // Serial.print("severity determined to be ");
-        // Serial.println(severityLevel);
+        Serial.print("severity determined to be ");
+        Serial.println(severityLevel);
 
-        // Serial.println("exit motion loop");
+        Serial.println("exit motion loop");
     }
 
     errorOn();
@@ -252,9 +265,10 @@ void loop_mkr1310() {
 
     // compact-byte types:
     setSeverity(mnd, severityLevel);
-    severityLevel = 0; // and reset
+    severityLevel = 0; // and viola, reset
 
-    setTSLC(mnd, TSLC() / 6000); // ms to minutes;
+    setTSLC(mnd, TSLC() / 60000); // convert ms to minutes;
+
     setTemperature(mnd, 25);
 
     AccelData dum;
@@ -267,8 +281,13 @@ void loop_mkr1310() {
     setBatt(mnd,
             100 * (((ADC_VREF * (bat_raw) / ((0b1 << ADC_BITS) - 1)) * (R_top + R_bot) / R_bot) - VBAT_ZERO) /
                 (VBAT_HUNDRED - VBAT_ZERO));
+
     setConnections(mnd, 1);
 
+    // WAIT UNTIL TIME TO SEND IS UPON US
+    // while (rtc.getEpoch() % (SLEEP_TIME_MS / 1000) != 0) {
+    //    ; // ?
+    //}
     // send status indicators
     LoRa.beginPacket();
     LoRa.write((uint8_t *) &mnd, sizeof(MND_Compact)); // Write the data to the packet
@@ -278,22 +297,39 @@ void loop_mkr1310() {
 
     // check if we should recompute the DC offset
     if (TSLC() > ADXL_CALIBRATION_INTERVAL) {
-        DC_offset = getDCOffset(adxl, CALIBRATION_TIME_SLICE);
-        TOLC      = millis();
+        DC_offset     = getDCOffset(adxl, CALIBRATION_TIME_SLICE);
+        need_reattach = true; // after the offset you need this
+        TOLC          = millis();
     }
 
-    // moved here because any number of sources could've taken over these
-    adxl->setInterrupt(ADXL345_ACTIVITY, true);    // enabling activity interrupt
-    adxl->setInterrupt(ADXL345_DATA_READY, false); // disabling data ready interrupt
+    // the mode was also changed to data collection. instead,
+    // wait for settle
+    adxlMode(adxl, ADXL_SETTLING);
+
+    while (!digitalRead(PIN_INTERRUPT))
+        ; // wait for inactivity pin to go high
+
+    adxlMode(adxl, ADXL_MOTION);
+
+    if (need_reattach) {
+        LowPower.attachInterruptWakeup(PIN_INTERRUPT, wakeuphandler, RISING);
+        need_reattach = false;
+    }
 
     adxl->getInterruptSource();
-    LowPower.attachInterruptWakeup(PIN_INTERRUPT, wakeuphandler, RISING);
-    motionDetected = false;     // attaching an interrupt may cause it to run. unset it here.
-    adxl->getInterruptSource(); // triple check
 
-    LowPower.deepSleep(SLEEP_TIME_MS);
+    // should we sleep, or just wait for the next period?
+    int next_wake_epoch;
+    next_wake_epoch = rtc.getEpoch() + (SLEEP_TIME_MS / 1000);
+    while (next_wake_epoch % (SLEEP_TIME_MS / 1000) != 0)
+        next_wake_epoch--;
 
+    // LowPower.deepSleep(SLEEP_TIME_MS);
 
+    // simulated sleeping:
+    motionDetected = false; // attaching an interrupt may cause it to run. unset it here.
+    while (!digitalRead(PIN_INTERRUPT) && rtc.getEpoch() < next_wake_epoch)
+        ;
 }
 
 #endif

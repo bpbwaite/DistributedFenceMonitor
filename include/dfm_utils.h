@@ -104,6 +104,7 @@ uint8_t maxPayload(int = REGION_TAG_US, int = SPREADFACTOR, long = CHIRPBW);
 double getTOA(int, int = SPREADFACTOR, long = CHIRPBW, int = PREAMBLELEN, float = CODERATE, bool = USING_CRC);
 
 void fullResetADXL(ADXL345 *);
+void adxlMode(ADXL345 *, uint8_t);
 
 double bwCodeToFs(byte);
 int getDCOffset(ADXL345 *, double);

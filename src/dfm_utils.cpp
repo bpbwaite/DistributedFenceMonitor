@@ -76,6 +76,28 @@ void fullResetADXL(ADXL345 *adxl) {
     adxl->setInterruptMapping(ADXL345_DATA_READY, ADXL345_INT1_PIN);
 }
 
+void adxlMode(ADXL345 *adxl, uint8_t mode) {
+    switch (mode) {
+    case ADXL_COLLECTION:
+        adxl->setInterrupt(ADXL345_ACTIVITY, false);
+        adxl->setInterrupt(ADXL345_INACTIVITY, false);
+        adxl->setInterrupt(ADXL345_DATA_READY, true);
+        break;
+    case ADXL_SETTLING:
+        adxl->setInterrupt(ADXL345_ACTIVITY, false);
+        adxl->setInterrupt(ADXL345_INACTIVITY, true);
+        adxl->setInterrupt(ADXL345_DATA_READY, false);
+        break;
+    case ADXL_MOTION:
+        adxl->setInterrupt(ADXL345_ACTIVITY, true);
+        adxl->setInterrupt(ADXL345_INACTIVITY, false);
+        adxl->setInterrupt(ADXL345_DATA_READY, false);
+        break;
+    default:
+        break;
+    }
+}
+
 double bwCodeToFs(byte bwc) {
     double Fs = -1;
 
@@ -145,6 +167,8 @@ int getDCOffset(ADXL345 *adxl, double t_increment) {
     // Serial.println(": Starting data collect");
 
     detachInterrupt(digitalPinToInterrupt(PIN_INTERRUPT));
+
+    adxlMode(adxl, ADXL_COLLECTION);
     adxl->setInterrupt(ADXL345_ACTIVITY, false);  // disabling activity interrupt
     adxl->setInterrupt(ADXL345_DATA_READY, true); // enabling data ready interrupt
 
@@ -194,8 +218,8 @@ int getDCOffset(ADXL345 *adxl, double t_increment) {
         }
 
         list_of_ranges[n] = zmax - zmin;
-        Serial.print(list_of_ranges[n]);
-        Serial.print(", ");
+        // Serial.print(list_of_ranges[n]);
+        // Serial.print(", ");
     }
     // find the value of the quiestest region
     int rmin = raw_max;

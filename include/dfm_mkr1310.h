@@ -18,15 +18,16 @@
 #define SERIALTIMEOUT 2500
 
 // TIMING CONFIGURATION
-#define SLEEP_TIME_MS       5000
+#define SLEEP_TIME_MS       5000 // recommend that these be whole seconds
 #define GMTOFFSET           -25200
 #define ADXL_SAMPLE_LENGTH  1000 // The number of accelerometer readings to hold
 #define ADXL_DC_CAPTURE     500  // Samples to take when running DC calibration
 #define ADXL_SAMPLE_TIMEOUT 500  // ms
 
 // CALIBRATOR SETTINGS
-#define CALIBRATION_TIME_SLICE    0.75     // seconds
-#define ADXL_CALIBRATION_INTERVAL 900000UL // ms, 900000 ~= 15 minutes
+#define CALIBRATION_TIME_SLICE 0.75 // seconds
+// #define ADXL_CALIBRATION_INTERVAL 900000UL // ms, 900000 ~= 15 minutes
+#define ADXL_CALIBRATION_INTERVAL 90000UL // ms, 900000 ~= 15 minutes
 
 // BATTERY POWER CONFIGURATION
 #define VBAT_HUNDRED 4.10
@@ -51,8 +52,11 @@
 #define ADXL_VOLTAGE 303 // 303 for 3.3, 205 for 2.5
 
 // INERTIAL MEASUREMENT CONSTANTS
-#define ADXL_FALLING 1
-#define ADXL_RISING  0
+#define ADXL_FALLING    1
+#define ADXL_RISING     0
+#define ADXL_COLLECTION 0x01
+#define ADXL_SETTLING   0x02
+#define ADXL_MOTION     0x04
 // linspace(0, (2*9.81)^2, 16)
 const double thresholdZ[15] = {
     25.66,
@@ -92,7 +96,7 @@ const double thresholdZ_logarithmic[15] = {
 // INERTIAL MEASUREMENT SETTINGS
 #define ADXL_SENSITIVITY 2 // 2, 4, 8, 16 (g)
 #define ADXL_FULLRESBIT  1
-#define ADXL_ACT_THRESH  0x0006 // 62.5mg per increment
+#define ADXL_ACT_THRESH  0x0007 // 62.5mg per increment
 #define ADXL_TIME_REST   2
 #define ADXL_LSB_PER_G_Z 256.0
 #define GRAVITY          9.81
