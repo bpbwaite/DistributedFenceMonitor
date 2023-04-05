@@ -141,8 +141,8 @@ int getDCOffset(ADXL345 *adxl, double t_increment) {
     const int raw_min = -1 * raw_max;
 
     // DATA COLLECTION SECTION
-    Serial.print(millis());
-    Serial.println(": Starting data collect");
+    // Serial.print(millis());
+    // Serial.println(": Starting data collect");
 
     detachInterrupt(digitalPinToInterrupt(PIN_INTERRUPT));
     adxl->setInterrupt(ADXL345_ACTIVITY, false);  // disabling activity interrupt
@@ -170,14 +170,14 @@ int getDCOffset(ADXL345 *adxl, double t_increment) {
     int num_ranges = (int) ceil(ADXL_DC_CAPTURE / Fs / t_increment);
     int list_of_ranges[num_ranges];
     int region_samples = floor(t_increment * Fs);
-    Serial.println(Fs);
-    Serial.println(num_ranges);
-    Serial.print("a region has ");
-    Serial.print(region_samples);
-    Serial.println(" samples.");
-    Serial.print(millis());
-    Serial.println(": going into computations");
-    Serial.print("list of ranges: ");
+    // Serial.println(Fs);
+    // Serial.println(num_ranges);
+    // Serial.print("a region has ");
+    // Serial.print(region_samples);
+    // Serial.println(" samples.");
+    // Serial.print(millis());
+    // Serial.println(": going into computations");
+    // Serial.print("list of ranges: ");
 
     // find the max and min of each region to get the range
     for (int n = 0; n < num_ranges; ++n) {
@@ -209,9 +209,9 @@ int getDCOffset(ADXL345 *adxl, double t_increment) {
         if (list_of_ranges[r_quiet] == rmin)
             break;
     }
-    Serial.print("using index ");
-    Serial.println(r_quiet);
-    // find the average of that region
+    // Serial.print("using index ");
+    // Serial.println(r_quiet);
+    //  find the average of that region
     region_start    = r_quiet * region_samples;
     region_end      = min(region_start + region_samples, ADXL_DC_CAPTURE - 1);
     int accumulator = 0;
@@ -220,9 +220,9 @@ int getDCOffset(ADXL345 *adxl, double t_increment) {
     }
 
     bias = accumulator / region_samples;
-    Serial.print(millis());
-    Serial.print(": A bias of ");
-    Serial.println(bias);
+    // Serial.print(millis());
+    // Serial.print(": A bias of ");
+    // Serial.println(bias);
 
     return bias;
 }

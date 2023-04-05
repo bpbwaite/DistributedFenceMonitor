@@ -163,20 +163,20 @@ void setup_mkr1310() {
 
     // ISR ATTACHMENT
     motionDetected = false;
-    // LowPower.attachInterruptWakeup(
-    //     PIN_INTERRUPT, wakeuphandler, RISING); // wake up on pin 7 rising edge and attach interrupt to pin 7 and sets
+    LowPower.attachInterruptWakeup(
+        PIN_INTERRUPT, wakeuphandler, RISING); // wake up on pin 7 rising edge and attach interrupt to pin 7 and sets
     //  handler of isr to the function named isr
 
     // FINALIZE SETUP
+    DC_offset = getDCOffset(adxl, CALIBRATION_TIME_SLICE);
+    TOLC      = millis();
+
     indicateOff();
     Serial.println(F("Notice: Node Setup Complete"));
 
-    DC_offset = getDCOffset(adxl, 0.5);
-    TOLC      = millis();
-
-    // if (Serial)
-    //     Serial.end();
-    // USBDevice.detach();
+    if (Serial)
+        Serial.end();
+    USBDevice.detach();
 }
 
 void loop_mkr1310() {
@@ -185,7 +185,7 @@ void loop_mkr1310() {
 
     // Boolean motionDetected that is changed from the ISR
     if (motionDetected) {
-        Serial.println(F("Wakeup was due to motion"));
+        // Serial.println(F("Wakeup was due to motion"));
         motionDetected = false;
         // Data Collection mode
         detachInterrupt(digitalPinToInterrupt(PIN_INTERRUPT));
@@ -209,7 +209,8 @@ void loop_mkr1310() {
                 ;
 
             if (TSLS() > 500UL)
-                Serial.println("Watchdog Error");
+                ;
+            // Serial.println("Watchdog Error");
 
             i++;
         }
@@ -225,11 +226,11 @@ void loop_mkr1310() {
                 currentMax = Z_Power_Samples[i];
             }
         }
-        Serial.print("Max of ");
-        Serial.println(currentMax);
-        // following for-loop should loop until thresholdZ is no longer passed
+        // Serial.print("Max of ");
+        // Serial.println(currentMax);
+        //  following for-loop should loop until thresholdZ is no longer passed
         for (i = 0; i < 15; ++i) {
-            if (currentMax < thresholdZ[i])
+            if (currentMax < thresholdZ_logarithmic[i])
                 break;
             severityLevel++;
         }
@@ -237,10 +238,10 @@ void loop_mkr1310() {
         // wait for settle ()
         // then
 
-        Serial.print("severity determined to be ");
-        Serial.println(severityLevel);
+        // Serial.print("severity determined to be ");
+        // Serial.println(severityLevel);
 
-        Serial.println("exit motion loop");
+        // Serial.println("exit motion loop");
     }
 
     errorOn();
@@ -253,7 +254,7 @@ void loop_mkr1310() {
     setSeverity(mnd, severityLevel);
     severityLevel = 0; // and reset
 
-    setTSLC(mnd, (4));
+    setTSLC(mnd, TSLC() / 6000); // ms to minutes;
     setTemperature(mnd, 25);
 
     AccelData dum;
@@ -266,15 +267,7 @@ void loop_mkr1310() {
     setBatt(mnd,
             100 * (((ADC_VREF * (bat_raw) / ((0b1 << ADC_BITS) - 1)) * (R_top + R_bot) / R_bot) - VBAT_ZERO) /
                 (VBAT_HUNDRED - VBAT_ZERO));
-    setBatt(mnd, 75);
     setConnections(mnd, 1);
-
-    // Serial.println("Compact Struct Readout");
-    // Serial.print("0b");
-    // for (int j = 31; j >= 0; --j) {
-    //     Serial.print(mnd.all_states & 0b1 << j ? '1' : '0');
-    // }
-    // Serial.println();
 
     // send status indicators
     LoRa.beginPacket();
@@ -286,17 +279,21 @@ void loop_mkr1310() {
     // check if we should recompute the DC offset
     if (TSLC() > ADXL_CALIBRATION_INTERVAL) {
         DC_offset = getDCOffset(adxl, CALIBRATION_TIME_SLICE);
+        TOLC      = millis();
     }
 
-    // LowPower.attachInterruptWakeup(PIN_INTERRUPT, wakeuphandler, RISING);
-    // LowPower.deepSleep(SLEEP_TIME_MS);
     // moved here because any number of sources could've taken over these
     adxl->setInterrupt(ADXL345_ACTIVITY, true);    // enabling activity interrupt
     adxl->setInterrupt(ADXL345_DATA_READY, false); // disabling data ready interrupt
-    attachInterrupt(PIN_INTERRUPT, wakeuphandler, RISING);
+
+    adxl->getInterruptSource();
+    LowPower.attachInterruptWakeup(PIN_INTERRUPT, wakeuphandler, RISING);
     motionDetected = false;     // attaching an interrupt may cause it to run. unset it here.
     adxl->getInterruptSource(); // triple check
-    delay(2000);
+
+    LowPower.deepSleep(SLEEP_TIME_MS);
+
+
 }
 
 #endif
