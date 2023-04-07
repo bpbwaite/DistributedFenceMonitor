@@ -41,13 +41,16 @@ s.Timeout = timeout;
 disp("Setup complete!")
 disp("Waiting for first packet to arrive")
 
+
+%% Audio setup
+
+[alert, Fs] = audioread("alert.wav");
 %% Ingest
 
 LogicalStr = {'false', 'true'};
 
 databuf = []; % map serial bytes onto struct
-hrbuf = []; % human readable databuffer
-
+n = 1;        % numerically track all data
 while 1
     while 1
         c = read(s, 1, "uint8");
@@ -56,60 +59,67 @@ while 1
         end
     end
     
-    databuf.id = read(s, 1, "uint32");
-    databuf.packetnum = read(s, 1, "uint32");
-    databuf.bat = read(s, 1, "uint32");
-    databuf.temp = read(s, 1, "uint32");
-    databuf.sever = read(s, 1, "uint32");
-    databuf.cons = read(s, 1, "uint32");
-    databuf.hasaccel = read(s, 1, "uint32");
-    databuf.needrtc = read(s, 1, "uint32");
-    databuf.uptime = read(s, 1, "uint32");
-    databuf.epoch = read(s, 1, "uint32");
-    databuf.tslc = read(s, 1, "uint32");
+    databuf(n).id = read(s, 1, "uint32");
+    databuf(n).packetnum = read(s, 1, "uint32");
+    databuf(n).bat = read(s, 1, "uint32");
+    databuf(n).temp = read(s, 1, "uint32");
+    databuf(n).sever = read(s, 1, "uint32");
+    databuf(n).cons = read(s, 1, "uint32");
+    databuf(n).hasaccel = read(s, 1, "uint32");
+    databuf(n).needrtc = read(s, 1, "uint32");
+    databuf(n).uptime = read(s, 1, "uint32");
+    databuf(n).epoch = read(s, 1, "uint32");
+    databuf(n).tslc = read(s, 1, "uint32");
     
-    databuf.sw = read(s, 1, "uint32");
-    databuf.bw = read(s, 1, "uint32");
-    databuf.freq = read(s, 1, "int32");
-    databuf.rssi = read(s, 1, "int32");
-    databuf.hops = read(s, 1, "uint32");
+    databuf(n).sw = read(s, 1, "uint32");
+    databuf(n).bw = read(s, 1, "uint32");
+    databuf(n).freq = read(s, 1, "int32");
+    databuf(n).rssi = read(s, 1, "int32");
+    databuf(n).hops = read(s, 1, "uint32");
     % terminator
     newl = read(s, 2, "uint8");
     
     
     % Display recomputed values in a Human Readable Format
     fprintf('\n');
-    show_list = true;
-if show_list    
-    fprintf('ID: 0x%02X\n', databuf.id);
-    fprintf('Packet: #%d\n', databuf.packetnum);
-    fprintf('Battery Charge: %d%%\n', databuf.bat);
-    fprintf('Temperature: %dC\n', databuf.temp);
+
+    fprintf('ID: 0x%02X\n', databuf(n).id);
+    fprintf('Packet: #%d\n', databuf(n).packetnum);
+    fprintf('Battery Charge: %d%%\n', databuf(n).bat);
+    fprintf('Temperature: %dC\n', databuf(n).temp);
     
-    fprintf('Severity: 0x%01X/0xF\n', databuf.sever);
-    fprintf('Connections: %d/63\n', databuf.cons);
-    fprintf('Has sensor: %s\n', LogicalStr{databuf.hasaccel + 1});
-    fprintf('Needs RTC: %s\n', LogicalStr{databuf.needrtc + 1});
-    fprintf('Uptime: %umin %01usec\n',...
-        floor(databuf.uptime/1000/60), floor(databuf.uptime/1000 - 60*floor(databuf.uptime/1000/60)));
+    fprintf('Severity: 0x%01X/0xF\n', databuf(n).sever);
+    fprintf('Connections: %d/63\n', databuf(n).cons);
+    fprintf('Has sensor: %s\n', LogicalStr{databuf(n).hasaccel + 1});
+    fprintf('Needs RTC: %s\n', LogicalStr{databuf(n).needrtc + 1});
+    fprintf('Uptime: %umin %02usec\n',...
+        floor(databuf(n).uptime/1000/60), floor(databuf(n).uptime/1000 - 60*floor(databuf(n).uptime/1000/60)));
     fprintf('RTC: %s\n',...
-        string(datetime(databuf.epoch + gmtoffset,...
+        string(datetime(databuf(n).epoch + gmtoffset,...
         'convertfrom', 'posixtime', 'Format', 'MM-dd-yyyy HH:mm:ss')));
-    fprintf('Calibration: %d min ago\n', databuf.tslc);
+    fprintf('Calibration: %d min ago\n', databuf(n).tslc);
     
-    fprintf('SyncWord: 0x%04X\n', databuf.sw);
-    fprintf('Bandwidth: %dkHz\n', databuf.bw/1000);
+    fprintf('SyncWord: 0x%04X\n', databuf(n).sw);
+    fprintf('Bandwidth: %dkHz\n', databuf(n).bw/1000);
     fprintf('Channel: %d (%.1fMHz)\n',...
-        [find(lch_us == databuf.freq), find(lch_eu == databuf.freq)],...
-        databuf.freq/1000000);
-    fprintf('RSSI: %ddBmW\n', databuf.rssi);
-    fprintf('Hops: %d\n', databuf.hops);
-else
-    ; % show in paragraph form
-end
+        [find(lch_us == databuf(n).freq), find(lch_eu == databuf(n).freq)],...
+        databuf(n).freq/1000000);
+    fprintf('RSSI: %ddBmW\n', databuf(n).rssi);
+    fprintf('Hops: %d\n', databuf(n).hops);
+    
     disp('----')
     
     
+    
+    % play any sound effects
+    % on receive data
+    % on high severity
+    if databuf(n).sever > 5
+        sound(alert, Fs)
+    end
+    
+    
+    n = n + 1;
     
 end
 

@@ -15,19 +15,18 @@
 // GENERAL SYSTEM CONFIGURATION
 #define DEBUG         true
 #define SERIALBAUD    115200
-#define SERIALTIMEOUT 2500
+#define SERIALTIMEOUT 10000
 
 // TIMING CONFIGURATION
 #define SLEEP_TIME_MS       5000 // recommend that these be whole seconds
 #define GMTOFFSET           -25200
-#define ADXL_SAMPLE_LENGTH  1000 // The number of accelerometer readings to hold
-#define ADXL_DC_CAPTURE     500  // Samples to take when running DC calibration
-#define ADXL_SAMPLE_TIMEOUT 500  // ms
+#define ADXL_SAMPLE_LENGTH  1000  // The number of accelerometer readings to hold
+#define ADXL_DC_CAPTURE     500   // Samples to take when running DC calibration
+#define ADXL_SAMPLE_TIMEOUT 500UL // ms
 
 // CALIBRATOR SETTINGS
-#define CALIBRATION_TIME_SLICE 0.75 // seconds
-// #define ADXL_CALIBRATION_INTERVAL 900000UL // ms, 900000 ~= 15 minutes
-#define ADXL_CALIBRATION_INTERVAL 90000UL // ms, 900000 ~= 15 minutes
+#define CALIBRATION_TIME_SLICE    0.75     // seconds
+#define ADXL_CALIBRATION_INTERVAL 900000UL // ms, 900000 ~= 15 minutes
 
 // BATTERY POWER CONFIGURATION
 #define VBAT_HUNDRED 4.10
