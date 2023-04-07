@@ -284,6 +284,12 @@ void loop_mkr1310() {
 
     setConnections(mnd, 1);
 
+    while (rtc.getEpoch() % 15 != 0) {
+        if (rtc.getEpoch() % 15 == 0) {
+            break;
+        }
+    }
+
     // WAIT UNTIL TIME TO SEND IS UPON US
     // while (rtc.getEpoch() % (SLEEP_TIME_MS / 1000) != 0) {
     //    ; // ?
