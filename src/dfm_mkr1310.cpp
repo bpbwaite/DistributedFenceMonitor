@@ -1,7 +1,7 @@
 /*
   FILE: DFM_MKR1310.CPP
-  VERSION: 0.2.5
-  DATE: 27 March 2023
+  VERSION: 0.9.0
+  DATE: 7 April 2023
   PROJECT: Distributed Fence Monitor Capstone
   AUTHORS: Briellyn Braithwaite, Jack Ramsay, Renzo Mena, Mike Paff
   DESCRIPTION: Preliminary test code for MKR1310
@@ -27,7 +27,7 @@
 
 // only defines unique to nodes that vary from board to board
 
-#define MY_IDENTIFIER 0xB1
+#define MY_IDENTIFIER 0x01 // 0-13; small scale build ID determines turn
 #define SET_RTC       true
 
 // global variables and objects
@@ -36,6 +36,7 @@ MND_Compact mnd;
 ADXL345 *adxl;
 
 // Data collection items
+int attackCounter = 0;
 
 int DC_offset = 0;
 double Z_Power_Samples[ADXL_SAMPLE_LENGTH];
@@ -50,6 +51,10 @@ void wakeuphandler(void) {
 }
 
 // timing related items
+
+uint32_t next_wake_epoch = 0;
+uint32_t next_send_epoch = 0;
+// init to zero so it is seen as past time to send
 
 volatile unsigned long TOLR = 0; // time of last real-time-clock setting
 inline unsigned long TSLR() {
@@ -93,11 +98,8 @@ void setup_mkr1310() {
         while (!Serial && millis() < SERIALTIMEOUT)
             yield();
     }
+    showtime();
     Serial.println(F("Serial Interface Connected!"));
-
-    // CONFIGURE WATCHDOG TIMER IF APPLICABLE
-    // wdt.setup(WDT_HARDCYCLE8S);
-    // wdt.clear();
 
     // ADXL INITIALIZATION
 
@@ -131,6 +133,7 @@ void setup_mkr1310() {
     else {
         freq = LoRaChannelsEU[7];
     }
+    showtime();
     Serial.print(F("Using "));
     Serial.print(freq / 1000000.0, 1);
     Serial.println(F("MHz channel"));
@@ -148,13 +151,14 @@ void setup_mkr1310() {
     LoRa.setTxPower(LORA_POWER, PA_OUTPUT_PA_BOOST_PIN);
     LoRa.setGain(RECEIVER_GAINMODE);
 
+    showtime();
     if (USING_CRC) {
         LoRa.enableCrc();
-        Serial.println(F("CRC Enabled"));
+        Serial.print(F("CRC Enabled: "));
     }
     else {
         LoRa.disableCrc();
-        Serial.println(F("CRC Disabled"));
+        Serial.print(F("CRC Disabled: "));
     }
     Serial.println(F("LoRa Module Operational"));
 
@@ -163,6 +167,8 @@ void setup_mkr1310() {
     PMIC.begin();
     // here
     PMIC.end();
+    showtime();
+    Serial.println(F("Power Manager IC Online"));
 
     // COLLECT SOME STRUCT PARAMETERS
 
@@ -180,6 +186,7 @@ void setup_mkr1310() {
 
     // FINALIZE
     indicateOff();
+    showtime();
     Serial.println(F("Node Setup Complete"));
 
     if (!DEBUG) {
@@ -193,68 +200,85 @@ void setup_mkr1310() {
 void loop_mkr1310() {
     // execution resumes from sleep here
     rtc.disableAlarm();
+    showtime();
+    Serial.println("Wokege");
 
+    attackCounter = 0;
+    severityLevel = 0;
     // Boolean motionDetected that is changed from the ISR
     if (motionDetected) {
+
+        showtime();
+        Serial.print(F("Wakeup was due to motion ("));
+
         // collection logic variables
-        int i = 0;
         int x, y, z;
 
         adxl->readAccel(&x, &y, &z);
         Serial.print("Z=");
         Serial.print(z);
         Serial.print("/");
-        Serial.println(DC_offset);
+        Serial.print(DC_offset);
+        Serial.println(")");
 
-        Serial.println(F("Wakeup was due to motion"));
         motionDetected = false;
         // Data Collection mode
         detachInterrupt(digitalPinToInterrupt(PIN_INTERRUPT));
         need_reattach = true;
 
-        // collect data:
-        adxlMode(adxl, ADXL_COLLECTION);
-        adxl->getInterruptSource();
-        while (i < ADXL_SAMPLE_LENGTH) {
-            digitalWrite(PIN_STATUSLED, !digitalRead(PIN_STATUSLED));
+        while (++attackCounter <= 2) { // make this 2 a define please
+            // collect data:
+            int i = 0;
+            adxlMode(adxl, ADXL_COLLECTION);
+            adxl->getInterruptSource();
+            while (i < ADXL_SAMPLE_LENGTH) {
+                digitalWrite(PIN_ERRORLED, !digitalRead(PIN_ERRORLED));
 
-            adxl->readAccel(&x, &y, &z);
-            Z_Power_Samples[i] = sq((z - DC_offset) * GRAVITY / (double) ADXL_LSB_PER_G_Z);
+                adxl->readAccel(&x, &y, &z);
+                Z_Power_Samples[i] = sq((z - DC_offset) * GRAVITY / (double) ADXL_LSB_PER_G_Z);
 
-            TOLS = millis();
+                TOLS = millis();
 
-            while (!digitalRead(PIN_INTERRUPT) && (TSLS() < 500UL))
-                // wait for the pin to go high and take sample
-                // a 1/2 second watchdog is implemented here
-                ;
+                while (!digitalRead(PIN_INTERRUPT) && (TSLS() < ADXL_SAMPLE_TIMEOUT))
+                    // wait for the pin to go high and take sample
+                    ;
 
-            i++;
-        }
+                i++;
+            }
 
-        // Renzo's algorithm
+            // Renzo's algorithm
+            double currentMax     = 0;
+            int periodic_severity = 0;
+            for (i = 0; i < ADXL_SAMPLE_LENGTH; ++i) {
+                if (Z_Power_Samples[i] > currentMax) {
+                    // this will be checking for the current max energy
+                    currentMax = Z_Power_Samples[i];
+                }
+            }
+            //  following for-loop should loop until thresholdZ is no longer passed
+            for (i = 0; i < 15; ++i) {
+                if (currentMax < thresholdZ_logarithmic[i])
+                    break;
+                periodic_severity++;
+            }
 
-        double currentMax = 0;
-        severityLevel     = 0;
+            severityLevel = max(severityLevel, periodic_severity);
 
-        for (i = 0; i < ADXL_SAMPLE_LENGTH; ++i) {
-            if (Z_Power_Samples[i] > currentMax) {
-                // this will be checking for the current max energy
-                currentMax = Z_Power_Samples[i];
+            if (inactivityInDataEnd(&i, 1, 2, 3)) {
+                showtime();
+                Serial.println(F("No need to scan again"));
+                break;
+            }
+            else {
+                showtime();
+                Serial.println(F("Still some movement, continuing scan"));
             }
         }
-        Serial.print("Max of ");
-        Serial.println(currentMax);
-        //  following for-loop should loop until thresholdZ is no longer passed
-        for (i = 0; i < 15; ++i) {
-            if (currentMax < thresholdZ_logarithmic[i])
-                break;
-            severityLevel++;
-        }
 
-        Serial.print("severity determined to be ");
-        Serial.println(severityLevel);
-
-        Serial.println("exit motion loop");
+        showtime();
+        Serial.print("Peak severity of ");
+        Serial.print(severityLevel);
+        Serial.println(". Exit.");
     }
 
     errorOn();
@@ -284,21 +308,35 @@ void loop_mkr1310() {
 
     setConnections(mnd, 1);
 
-    while (rtc.getEpoch() % 15 != 0) {
-        if (rtc.getEpoch() % 15 == 0) {
-            break;
-        }
+    // WAIT UNTIL TIME TO SEND IS UPON US
+
+    next_send_epoch = rtc.getEpoch() + (SLEEP_TIME_MS / 1000);
+    while (next_send_epoch % (SLEEP_TIME_MS / 1000) != 0)
+        next_send_epoch--;
+    next_send_epoch += MY_IDENTIFIER;
+
+    showtime();
+    Serial.println(F("Waiting for my turn..."));
+    while (rtc.getEpoch() < next_send_epoch) {
+        yield(); // ? chilling?
     }
 
-    // WAIT UNTIL TIME TO SEND IS UPON US
-    // while (rtc.getEpoch() % (SLEEP_TIME_MS / 1000) != 0) {
-    //    ; // ?
-    //}
+    // show what we are sending
+    showtime();
+    Serial.print(F("Sending Data: 0x"));
+    for (int k = 0; k < sizeof(MND_Compact); ++k) {
+        Serial.print(((uint8_t *) &mnd)[k], 16);
+    }
+    Serial.println();
+
     // send status indicators
     LoRa.beginPacket();
     LoRa.write((uint8_t *) &mnd, sizeof(MND_Compact)); // Write the data to the packet
     LoRa.endPacket(false);                             // false to block while sending
     LoRa.sleep();
+
+    showtime();
+    Serial.println(F("Sent!"));
     errorOff();
 
     // check if we should recompute the DC offset
@@ -308,13 +346,6 @@ void loop_mkr1310() {
         TOLC          = millis();
     }
 
-    // the mode was also changed to data collection. instead,
-    // wait for settle
-    adxlMode(adxl, ADXL_SETTLING);
-
-    while (!digitalRead(PIN_INTERRUPT))
-        ; // wait for inactivity pin to go high
-
     adxlMode(adxl, ADXL_MOTION);
 
     if (need_reattach) {
@@ -323,17 +354,23 @@ void loop_mkr1310() {
     }
 
     adxl->getInterruptSource();
+    motionDetected = false; // attaching an interrupt may cause it to run. unset it here.
 
-    // should we sleep, or just wait for the next period?
-    int next_wake_epoch;
+    // find out when to set my alarm for
     next_wake_epoch = rtc.getEpoch() + (SLEEP_TIME_MS / 1000);
     while (next_wake_epoch % (SLEEP_TIME_MS / 1000) != 0)
         next_wake_epoch--;
 
-    // LowPower.deepSleep(SLEEP_TIME_MS);
+    next_wake_epoch -= 1;
+    // need to be awake BY the epoch, so wake up 1s before it
+    // to complete any other computations
 
+    showtime();
+    Serial.print("I shleep till ");
+    Serial.println(next_wake_epoch);
+
+    // LowPower.deepSleep(next_wake_epoch - rtc.getEpoch());
     // simulated sleeping:
-    motionDetected = false; // attaching an interrupt may cause it to run. unset it here.
     while (!digitalRead(PIN_INTERRUPT) && rtc.getEpoch() < next_wake_epoch)
         ;
 }

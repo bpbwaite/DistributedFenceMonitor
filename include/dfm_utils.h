@@ -100,6 +100,9 @@ typedef struct {
 } AccelData;
 
 // Node Functions
+
+void showtime();
+
 uint8_t maxPayload(int = REGION_TAG_US, int = SPREADFACTOR, long = CHIRPBW);
 double getTOA(int, int = SPREADFACTOR, long = CHIRPBW, int = PREAMBLELEN, float = CODERATE, bool = USING_CRC);
 
@@ -108,6 +111,8 @@ void adxlMode(ADXL345 *, uint8_t);
 
 double bwCodeToFs(byte);
 int getDCOffset(ADXL345 *, double);
+
+bool inactivityInDataEnd(int *, int, int, int);
 
 void setSeverity(MND_Compact &, int);
 void setTSLC(MND_Compact &, int);
@@ -129,12 +134,12 @@ void errorOn();
 void errorOff();
 void ERROR_OUT(uint8_t = 0b10001000);
 
-int getSeverity(MND_Compact &);
-int getTSLC(MND_Compact &);
-bool getNeedRTC(MND_Compact &);
-int getTemperature(MND_Compact &);
-bool getIMUBit(MND_Compact &);
-int getBatt(MND_Compact &);
-int getConnections(MND_Compact &);
+int getSeverity(const MND_Compact &);
+int getTSLC(const MND_Compact &);
+bool getNeedRTC(const MND_Compact &);
+int getTemperature(const MND_Compact &);
+bool getIMUBit(const MND_Compact &);
+int getBatt(const MND_Compact &);
+int getConnections(const MND_Compact &);
 
 #endif

@@ -15,6 +15,11 @@
 #include <time.h>
 #include <SparkFun_ADXL345.h>
 
+void showtime() {
+    Serial.print(F("-> "));
+    Serial.print((millis() / 1000.0), 1);
+    Serial.print(F(": "));
+}
 void indicateOn() {
     digitalWrite(PIN_STATUSLED, HIGH);
 }
@@ -162,9 +167,11 @@ int getDCOffset(ADXL345 *adxl, double t_increment) {
     const int raw_max = ADXL_SENSITIVITY * ADXL_LSB_PER_G_Z;
     const int raw_min = -1 * raw_max;
 
-    // DATA COLLECTION SECTION
-    // Serial.print(millis());
-    // Serial.println(": Starting data collect");
+    unsigned long tols = 0; // local implementation of TOLS
+                            // DATA COLLECTION SECTION
+
+    showtime();
+    Serial.print(F("Calibrating quiescent bias. Data: "));
 
     detachInterrupt(digitalPinToInterrupt(PIN_INTERRUPT));
 
@@ -177,9 +184,11 @@ int getDCOffset(ADXL345 *adxl, double t_increment) {
     while (i < ADXL_DC_CAPTURE) {
         adxl->readAccel(&x, &y, &z);
         Z_Raw_Samples[i] = z;
-        while (!digitalRead(PIN_INTERRUPT))
+
+        tols = millis();
+
+        while (!digitalRead(PIN_INTERRUPT) && (millis() - tols < ADXL_SAMPLE_TIMEOUT))
             // wait for the pin to go high and take sample
-            // TODO implement a fast, 1/2 sec watchdog here.
             ;
         i++;
     }
@@ -194,14 +203,10 @@ int getDCOffset(ADXL345 *adxl, double t_increment) {
     int num_ranges = (int) ceil(ADXL_DC_CAPTURE / Fs / t_increment);
     int list_of_ranges[num_ranges];
     int region_samples = floor(t_increment * Fs);
-    // Serial.println(Fs);
-    // Serial.println(num_ranges);
-    // Serial.print("a region has ");
-    // Serial.print(region_samples);
-    // Serial.println(" samples.");
-    // Serial.print(millis());
-    // Serial.println(": going into computations");
-    // Serial.print("list of ranges: ");
+
+    Serial.print(Fs);
+    Serial.print(num_ranges);
+    Serial.print(region_samples);
 
     // find the max and min of each region to get the range
     for (int n = 0; n < num_ranges; ++n) {
@@ -218,8 +223,8 @@ int getDCOffset(ADXL345 *adxl, double t_increment) {
         }
 
         list_of_ranges[n] = zmax - zmin;
-        // Serial.print(list_of_ranges[n]);
-        // Serial.print(", ");
+
+        Serial.print(list_of_ranges[n]);
     }
     // find the value of the quiestest region
     int rmin = raw_max;
@@ -233,8 +238,6 @@ int getDCOffset(ADXL345 *adxl, double t_increment) {
         if (list_of_ranges[r_quiet] == rmin)
             break;
     }
-    // Serial.print("using index ");
-    // Serial.println(r_quiet);
     //  find the average of that region
     region_start    = r_quiet * region_samples;
     region_end      = min(region_start + region_samples, ADXL_DC_CAPTURE - 1);
@@ -244,11 +247,20 @@ int getDCOffset(ADXL345 *adxl, double t_increment) {
     }
 
     bias = accumulator / region_samples;
-    // Serial.print(millis());
-    // Serial.print(": A bias of ");
-    // Serial.println(bias);
+
+    Serial.println();
+    showtime();
+    Serial.print(F("Got a bias of "));
+    Serial.print(bias);
+    Serial.println(" LSBs");
 
     return bias;
+}
+
+bool inactivityInDataEnd(int *x, int y, int z, int w) {
+
+    // not yet implemented
+    return true;
 }
 
 uint8_t maxPayload(int region, int sf, long bw) {
@@ -354,25 +366,25 @@ void setConnections(MND_Compact &d, int amt) {
     d.all_states &= ~0x000000FC;
     d.all_states |= (amt << 2);
 }
-int getSeverity(MND_Compact &d) {
+int getSeverity(const MND_Compact &d) {
     return (d.all_states & 0xF0000000) >> 28;
 }
-int getTSLC(MND_Compact &d) {
+int getTSLC(const MND_Compact &d) {
     return (d.all_states & 0x0F000000) >> 24;
 }
-bool getNeedRTC(MND_Compact &d) {
+bool getNeedRTC(const MND_Compact &d) {
     return (d.all_states & 0x00800000);
 }
-int getTemperature(MND_Compact &d) {
+int getTemperature(const MND_Compact &d) {
     return (d.all_states & 0x007F0000) >> 16;
 }
-bool getIMUBit(MND_Compact &d) {
+bool getIMUBit(const MND_Compact &d) {
     return (d.all_states & 0x00008000);
 }
-int getBatt(MND_Compact &d) {
+int getBatt(const MND_Compact &d) {
     return (d.all_states & 0x00007F00) >> 8;
 }
-int getConnections(MND_Compact &d) {
+int getConnections(const MND_Compact &d) {
     return (d.all_states & 0x000000FC) >> 2;
 }
 
