@@ -21,13 +21,14 @@
 #include <LoRa.h>
 #include <RTCZero.h>
 // #include <WDTZero.h>
+#include <DHT.h>
 #include <SPI.h>
 #include <SparkFun_ADXL345.h>
 #include <Wire.h>
 
 // only defines unique to nodes that vary from board to board
 
-#define MY_IDENTIFIER 0x01 // 0-13; small scale build ID determines turn
+#define MY_IDENTIFIER 0x02 // 0-13; small scale build ID determines turn
 #define SET_RTC       true
 
 // global variables and objects
@@ -35,6 +36,7 @@ RTCZero rtc;
 MND_Compact mnd;
 MND_Ack mnd_response;
 ADXL345 *adxl;
+DHT *tSensor;
 
 // System Counters
 
@@ -94,6 +96,8 @@ void setup_mkr1310() {
     pinMode(PIN_STATUSLED, INPUT);
     pinMode(PIN_ERRORLED, OUTPUT);
     pinMode(LORA_IRQ, INPUT);
+
+    pinMode(PIN_DHT, OUTPUT);
 
     indicateOn();
     errorOff();
@@ -191,6 +195,15 @@ void setup_mkr1310() {
     PMIC.end();
     timeStamp();
     Serial.println(F("Power Manager IC Initialized!"));
+
+    // TEMPERATURE SENSOR (IF AVAILABLE)
+    tSensor = new DHT(PIN_DHT, DHT11);
+    tSensor->begin();
+    delay(2000); // required after setup
+    if (!isnan(tSensor->readTemperature(false))) {
+        timeStamp();
+        Serial.println(F("Temperature Sensor Detected"));
+    }
 
     // CALIBRATE GRAVITATIONAL BIAS
     DC_offset = getDCOffset(adxl, CALIBRATION_TIME_SLICE);
@@ -316,7 +329,7 @@ void loop_mkr1310() {
 
     setTSLC(mnd, TSLC() / 60000UL); // convert ms to minutes;
 
-    setTemperature(mnd, 25);
+    setTemperature(mnd, (int) tSensor->readTemperature(false));
 
     AccelData dum;
     adxl->getInterruptSource();
@@ -383,7 +396,7 @@ void loop_mkr1310() {
         Serial.print("Got: ");
         Serial.print(mnd_response.universal_epoch);
         Serial.print("  ");
-        Serial.print(mnd_response.universal_millis);
+        Serial.print(mnd_response.central_millis);
         Serial.print("  ");
         Serial.println(mnd_response.weak_signal_please_increase);
 
@@ -393,6 +406,10 @@ void loop_mkr1310() {
             timeStamp();
             Serial.println(F("Clocks Aligned"));
         }
+
+        central_milliseconds = mnd_response.central_millis;
+        timeStamp();
+        Serial.println(F("Subclock MS Value Set"));
     }
     // reset receiver flag and sleep
     ackFlag = 0;
@@ -432,7 +449,6 @@ void loop_mkr1310() {
     // simulated sleeping:
     while (!digitalRead(PIN_INTERRUPT) && rtc.getEpoch() < next_wake_epoch)
         ;
-    mnd.ID = random(1, 5); // for testing
 }
 
 #endif

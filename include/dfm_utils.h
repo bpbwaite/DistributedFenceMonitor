@@ -64,7 +64,7 @@ typedef struct {
 
     // Acknowledgement is sent back to the node from the central server
     uint32_t universal_epoch;
-    uint32_t universal_millis;
+    uint32_t central_millis;
     uint32_t weak_signal_please_increase; // (boolean)
 
 } MND_Ack;

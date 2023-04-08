@@ -271,9 +271,7 @@ bool inactivityInDataEnd(double *zdata, double LastXSeconds, ADXL345 *adxl) {
             return false;
         }
         else {
-            Serial.print(zdata[i]);
-            Serial.print(" not greater than ");
-            Serial.println(ZThresholdPower);
+            ;
         }
     }
     return true;

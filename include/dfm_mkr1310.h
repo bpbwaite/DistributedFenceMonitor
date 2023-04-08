@@ -49,6 +49,7 @@
 #define PIN_ADXLCS1   A3 // chipselect pin for the primary accelerometer
 #define PIN_ADXLCS2   A4 // chipselect pin for the secondary accelerometer
 #define PIN_INTERRUPT 7
+#define PIN_DHT       4
 
 #define ADXL_VOLTAGE 303 // 303 for 3.3, 205 for 2.5
 
