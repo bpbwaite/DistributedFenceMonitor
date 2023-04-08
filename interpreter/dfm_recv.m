@@ -107,8 +107,10 @@ while 1
     fprintf('Connections: %d/63\n', databuf.cons(n));
     fprintf('Has sensor: %s\n', LogicalStr{databuf.hasaccel(n) + 1});
     fprintf('Needs RTC: %s\n', LogicalStr{databuf.needrtc(n) + 1});
+    
+    utm = floor(databuf.uptime(n) / 1000/60);
     fprintf('Uptime: %umin %02usec\n', ...
-        floor(databuf.uptime(n) / 1000/60), floor(databuf.uptime(n) / 1000 - 60 * floor(databuf.uptime(n) / 1000/60)));
+        utm, floor(databuf.uptime(n) / 1000 - 60 * floor(databuf.uptime(n) / 1000/60)));
     fprintf('RTC: %s\n', ...
         string(datetime(databuf.epoch(n) + gmtoffset, ...
         'convertfrom', 'posixtime', 'Format', 'MM-dd-yyyy HH:mm:ss')));
@@ -116,8 +118,9 @@ while 1
     
     fprintf('SyncWord: 0x%04X\n', databuf.sw(n));
     fprintf('Bandwidth: %dkHz\n', databuf.bw(n) / 1000);
-    fprintf('Channel: %d (%.1fMHz)\n', ...
-        [find(lch_us == databuf.freq(n)), find(lch_eu == databuf.freq(n))], ...
+    
+    fch = [find(lch_us == databuf.freq(n)), find(lch_eu == databuf.freq(n))];
+    fprintf('Channel: %d (%.1fMHz)\n', fch, ...
         databuf.freq(n) / 1000000);
     fprintf('RSSI: %ddBmW\n', databuf.rssi(n));
     fprintf('Hops: %d\n', databuf.hops(n));
@@ -128,35 +131,56 @@ while 1
     % on receive data
     % on high severity
     if databuf.sever(n) > 5
-        %sound(alert, Fs1)
+        sound(alert, Fs1)
     elseif ~databuf.hasaccel(n)
-        %sound(error, Fs3)
+        sound(error, Fs3)
     else
-        %sound(ding, Fs2)
+        sound(ding, Fs2)
     end
     
     % update graph
+    devices_tracking = 1:max(databuf.id);
     
     device_stats.temp(databuf.id(n)) = databuf.temp(n);
     device_stats.bat(databuf.id(n)) = databuf.bat(n);
     device_stats.sever(databuf.id(n)) = databuf.sever(n);
     device_stats.margin(databuf.id(n)) = floor(abs(databuf.rssi(n) - No_Signal));
     device_stats.tslc(databuf.id(n)) = databuf.tslc(n);
+    device_stats.channel(databuf.id(n)) = fch;
+    device_stats.cons(databuf.id(n)) = databuf.cons(n);
+    device_stats.uptime(databuf.id(n)) = utm;
     
-    devices_tracking = 1:max(databuf.id);
     b = bar(devices_tracking,...
-        [device_stats.temp' device_stats.bat' device_stats.sever' device_stats.margin' device_stats.tslc'],...
+        [
+        device_stats.temp
+        device_stats.bat
+        device_stats.sever
+        device_stats.margin
+        device_stats.tslc
+        device_stats.channel
+        device_stats.cons
+        device_stats.uptime
+        ]',...    
         'grouped');
     
     b(1).BaseValue = -5;
-    xlabel('Device')
-    ylabel('Value')
+    b(1).BarWidth = 0.96;
+    xlabel('DEVICES')
+    ylabel('PARAMETER VALUE')
     ylim([-5 115])
-    yticks([0:10:100])
-    title('STATUS')
-    legend('Temperature (\circC)', 'Battery (%)', 'Severity', 'Link Margin (dB)', 'Calibration (m)')
+    yticks(0:10:100)
+    title('SUPER SYSTEM STATUS')
+    legend(...
+        'Temperature (\circC)',...
+        'Battery (%)',...
+        'Severity',...
+        'Link Margin (dB)',...
+        'Calibration (min)',...
+        'LoRa Channel',...
+        'Connections',...
+        'Uptime (min)')
     
-    for k = 1:5
+    for k = 1:max(size(fieldnames(device_stats)))
         xtips1 = b(k).XEndPoints;
         ytips1 = b(k).YEndPoints;
         labels1 = string(b(k).YData);
@@ -164,13 +188,7 @@ while 1
             'VerticalAlignment','bottom')
     end
     
-    b(1).FaceColor = [.3 .7 .5];
-    b(2).FaceColor = [.2 .1 .8];
-    b(3).FaceColor = [.8 .1 .2];
-    b(4).FaceColor = [.7 .6 .0];
-    b(5).FaceColor = [.2 .2 .5];
    
-    %gca.XAxis.TickLength = [0 0];
     drawnow
     
     n = n + 1;
