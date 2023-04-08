@@ -10,7 +10,7 @@
 
 %% Load Data & Setup
 cd(fileparts(matlab.desktop.editor.getActiveFilename)); % Set the working dir to dir of this file
-test_name = 'accel_8.mat';
+test_name = 'accel_5.mat';
 close all
 load(test_name)
 
@@ -44,11 +44,11 @@ for n = 1:length(list_of_ranges)
 end
 
 [~, idx] = min(list_of_ranges);
-dx_start = floor(idx*Fs*inc_samples);
+dx_start = floor(idx*Fs*inc_size_sec);
 dx_end = min(dx_start + inc_samples, length(z));
 bias = mean(z(dx_start:dx_end));
 
-figure, 
+figure,
 grid off
 plot(t, abs(z - bias), 'b');
 
