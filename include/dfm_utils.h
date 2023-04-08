@@ -112,7 +112,7 @@ void adxlMode(ADXL345 *, uint8_t);
 double bwCodeToFs(byte);
 int getDCOffset(ADXL345 *, double);
 
-bool inactivityInDataEnd(int *, int, int, int);
+bool inactivityInDataEnd(double *, double, ADXL345 *adxl);
 
 void setSeverity(MND_Compact &, int);
 void setTSLC(MND_Compact &, int);

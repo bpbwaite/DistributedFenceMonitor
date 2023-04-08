@@ -257,9 +257,15 @@ int getDCOffset(ADXL345 *adxl, double t_increment) {
     return bias;
 }
 
-bool inactivityInDataEnd(int *x, int y, int z, int w) {
-
-    // not yet implemented
+bool inactivityInDataEnd(double *zdata, double LastXSeconds, ADXL345 *adxl) {
+    double Fs              = bwCodeToFs(adxl->get_bw_code());
+    int num_samples        = floor(LastXSeconds * Fs);
+    double ZThresholdPower = sq((double) ADXL_ACT_THRESH * 62.5 / 1000.0);
+    for (int i = ADXL_SAMPLE_LENGTH - num_samples; i < ADXL_SAMPLE_LENGTH; ++i) {
+        if (zdata[i] > ZThresholdPower) {
+            return false;
+        }
+    }
     return true;
 }
 

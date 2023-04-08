@@ -264,7 +264,7 @@ void loop_mkr1310() {
 
             severityLevel = max(severityLevel, periodic_severity);
 
-            if (inactivityInDataEnd(&i, 1, 2, 3)) {
+            if (inactivityInDataEnd(Z_Power_Samples, ADXL_TIME_REST, adxl)) {
                 showtime();
                 Serial.println(F("No need to scan again"));
                 break;

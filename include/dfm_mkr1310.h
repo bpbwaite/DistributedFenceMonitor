@@ -96,7 +96,7 @@ const double thresholdZ_logarithmic[15] = {
 #define ADXL_SENSITIVITY 2 // 2, 4, 8, 16 (g)
 #define ADXL_FULLRESBIT  1
 #define ADXL_ACT_THRESH  0x0007 // 62.5mg per increment
-#define ADXL_TIME_REST   2
+#define ADXL_TIME_REST   1.2
 #define ADXL_LSB_PER_G_Z 256.0
 #define GRAVITY          9.81
 
