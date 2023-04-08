@@ -10,9 +10,9 @@
 
 #ifdef ARDUINO_SAMD_MKRWAN1310
 
+#include "dfm_mkr1310.h"
 #include <Arduino.h>
 #include <SparkFun_ADXL345.h>
-#include "dfm_mkr1310.h"
 
 // Structures
 
@@ -60,6 +60,14 @@ typedef struct {
 
 } MND_Report;
 
+typedef struct {
+
+    // Acknowledgement is sent back to the node from the central server
+    uint32_t universal_epoch;
+    uint32_t universal_millis;
+    uint32_t weak_signal_please_increase; // (boolean)
+
+} MND_Ack;
 // Deprecated:
 // typedef struct {
 //     uint32_t packetnum;
@@ -101,7 +109,7 @@ typedef struct {
 
 // Node Functions
 
-void showtime();
+void timeStamp();
 
 uint8_t maxPayload(int = REGION_TAG_US, int = SPREADFACTOR, long = CHIRPBW);
 double getTOA(int, int = SPREADFACTOR, long = CHIRPBW, int = PREAMBLELEN, float = CODERATE, bool = USING_CRC);

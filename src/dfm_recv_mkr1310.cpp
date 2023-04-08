@@ -25,6 +25,7 @@
 
 RTCZero rtc;
 MND_Compact mnd_received;
+MND_Ack mnd_acknowledgement;
 MND_Report mnd_printable;
 
 long freq                  = LoRaChannelsUS[63];
@@ -60,8 +61,11 @@ void setup_recv_mkr1310() {
     LoRa.setGain(RECEIVER_GAINMODE);
     LoRa.setSpreadingFactor(SPREADFACTOR);
     LoRa.setSignalBandwidth(CHIRPBW);
+    LoRa.setCodingRate4(CODERATE);
     LoRa.setSyncWord(SYNCWORD);
     LoRa.setPreambleLength(PREAMBLELEN);
+    LoRa.setTxPower(12, PA_OUTPUT_PA_BOOST_PIN);
+
     if (USING_CRC) {
         LoRa.enableCrc();
         Serial.println(F("Notice: CRC Enabled"));
@@ -71,9 +75,15 @@ void setup_recv_mkr1310() {
         Serial.println(F("Notice: CRC Disabled"));
     }
 
+    // Lora ACK packet parameters
+    mnd_acknowledgement.universal_epoch = rtc.getEpoch();
+    mnd_acknowledgement.universal_millis =
+        millis(); // TODO define this value as the remainder of millis at which rtc ticks occur
+    mnd_acknowledgement.weak_signal_please_increase = false;
+
     // SPI.usingInterrupt(digitalPinToInterrupt(LORA_IRQ));
     // SPI.notUsingInterrupt(digitalPinToInterrupt(LORA_IRQ));
-    //  need to call this to reset the internal IVT over SPI
+    //  need to call this if you want to reset the internal IVT over SPI
 
     //  interrupt attachment order matters
     LowPower.attachInterruptWakeup(
@@ -97,6 +107,17 @@ void loop_recv_mkr1310() {
     while (LoRa.available() && byteIndexer < sizeof(MND_Compact))
         ((uint8_t *) &mnd_received)[byteIndexer++] = (uint8_t) LoRa.read();
 
+    delay(250);
+
+    // respond with acknowledgement
+    mnd_acknowledgement.universal_epoch             = rtc.getEpoch();
+    mnd_printable.rssi                              = LoRa.packetRssi();
+    mnd_acknowledgement.weak_signal_please_increase = (mnd_printable.rssi < WEAK_RSSI) ? 1 : 0;
+
+    LoRa.beginPacket();
+    LoRa.write((uint8_t *) &mnd_acknowledgement, sizeof(MND_Ack)); // Write the data to the packet
+    LoRa.endPacket(false);
+
     // expand data for easier processing
     mnd_printable.ID             = mnd_received.ID;
     mnd_printable.packetnum      = mnd_received.packetnum;
@@ -112,7 +133,6 @@ void loop_recv_mkr1310() {
     mnd_printable.sw             = SYNCWORD;
     mnd_printable.bw             = CHIRPBW;
     mnd_printable.freq           = LoRaChannelsUS[63];
-    mnd_printable.rssi           = LoRa.packetRssi();
     mnd_printable.hops           = 0;
 
     Serial.print('#');
