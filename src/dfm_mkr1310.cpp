@@ -33,10 +33,18 @@
 // global variables and objects
 RTCZero rtc;
 MND_Compact mnd;
+MND_Ack mnd_response;
 ADXL345 *adxl;
 
-// Data collection items
+// System Counters
+
+int adxlAttempts  = 0; // num times attempted to communicate with sensor
 int attackCounter = 0;
+uint32_t central_milliseconds;
+uint32_t ms_offset;       // TODO compute and use ms offset to more accurately schedule wake
+volatile int ackFlag = 0; // bytes received in acknowledgement
+
+// Data collection items
 
 int DC_offset = 0;
 double Z_Power_Samples[ADXL_SAMPLE_LENGTH];
@@ -68,6 +76,10 @@ volatile unsigned long TOLS = 0; // time of last sample
 inline unsigned long TSLS() {
     return millis() - TOLS;
 } // time since last sample
+volatile unsigned long TOLA = 0; // time of last ack
+inline unsigned long TSLA() {
+    return millis() - TOLA;
+} // time since last ack
 
 void setup_mkr1310() {
 
@@ -81,6 +93,7 @@ void setup_mkr1310() {
     pinMode(PIN_INTERRUPT, INPUT_PULLDOWN);
     pinMode(PIN_STATUSLED, INPUT);
     pinMode(PIN_ERRORLED, OUTPUT);
+    pinMode(LORA_IRQ, INPUT);
 
     indicateOn();
     errorOff();
@@ -98,12 +111,12 @@ void setup_mkr1310() {
         while (!Serial && millis() < SERIALTIMEOUT)
             yield();
     }
-    showtime();
+    timeStamp();
     Serial.println(F("Serial Interface Connected!"));
 
     // ADXL INITIALIZATION
 
-    while (1) { // may take multiple attempts
+    while (++adxlAttempts <= ADXL_CONNECTION_TIMEOUT) { // may take 2+ attempts
 
         adxl = new ADXL345(PIN_ADXLCS1);
 
@@ -114,13 +127,20 @@ void setup_mkr1310() {
         adxl->getInterruptSource();
         adxl->readAccel(&dum.x, &dum.y, &dum.z);
         if ((abs(dum.x) + abs(dum.y) + abs(dum.z)) <= 0) {
-            Serial.println(F("Error: ADXL Appears Offline"));
-            ERROR_OUT(ERROR_ADXL345);
+            Serial.println(F("No ADXL on SPIBUS, retrying..."));
         }
         else
             break;
     }
+    if (adxlAttempts > ADXL_CONNECTION_TIMEOUT) {
+        Serial.println(F("Error: ADXL Appears Offline"));
+        while (1)
+            ERROR_OUT(ERROR_ADXL345);
+    }
     adxlMode(adxl, ADXL_MOTION);
+
+    timeStamp();
+    Serial.println(F("ADXL Online!"));
 
     // LORA INITIALIZATION
 
@@ -133,14 +153,16 @@ void setup_mkr1310() {
     else {
         freq = LoRaChannelsEU[7];
     }
-    showtime();
+
+    timeStamp();
     Serial.print(F("Using "));
     Serial.print(freq / 1000000.0, 1);
     Serial.println(F("MHz channel"));
 
     if (!LoRa.begin(freq)) {
         Serial.println(F("Error: LoRa Module Failure"));
-        ERROR_OUT(ERROR_NO_LORA);
+        while (1)
+            ERROR_OUT(ERROR_NO_LORA);
     }
 
     LoRa.setSpreadingFactor(SPREADFACTOR);
@@ -151,7 +173,7 @@ void setup_mkr1310() {
     LoRa.setTxPower(LORA_POWER, PA_OUTPUT_PA_BOOST_PIN);
     LoRa.setGain(RECEIVER_GAINMODE);
 
-    showtime();
+    timeStamp();
     if (USING_CRC) {
         LoRa.enableCrc();
         Serial.print(F("CRC Enabled: "));
@@ -160,15 +182,19 @@ void setup_mkr1310() {
         LoRa.disableCrc();
         Serial.print(F("CRC Disabled: "));
     }
-    Serial.println(F("LoRa Module Operational"));
+    Serial.println(F("LoRa Module Operational!"));
 
     // POWER MANAGER INITIALIZATION
 
     PMIC.begin();
     // here
     PMIC.end();
-    showtime();
-    Serial.println(F("Power Manager IC Online"));
+    timeStamp();
+    Serial.println(F("Power Manager IC Initialized!"));
+
+    // CALIBRATE GRAVITATIONAL BIAS
+    DC_offset = getDCOffset(adxl, CALIBRATION_TIME_SLICE);
+    TOLC      = millis();
 
     // COLLECT SOME STRUCT PARAMETERS
 
@@ -176,23 +202,23 @@ void setup_mkr1310() {
     mnd.packetnum  = 0;
     mnd.all_states = 0x0F80E402;
 
-    // CALIBRATE FOR BIAS
-    DC_offset = getDCOffset(adxl, CALIBRATION_TIME_SLICE);
-    TOLC      = millis();
-
     // ISR ATTACHMENT
     motionDetected = false;
-    LowPower.attachInterruptWakeup(PIN_INTERRUPT, wakeuphandler, RISING); // wake up on pin 7 rising
+    LowPower.attachInterruptWakeup(
+        digitalPinToInterrupt(PIN_INTERRUPT), wakeuphandler, RISING); // wake up on pin 7 rising
+
+    // acknowledgement attach
+    LoRa.onReceive([](int sz) -> void { ackFlag = sz; });
 
     // FINALIZE
     indicateOff();
-    showtime();
-    Serial.println(F("Node Setup Complete"));
+    timeStamp();
+    Serial.println(F("Node Setup Complete!"));
 
     if (!DEBUG) {
+        Serial.println(F("Shutting down external serial interface."));
         if (Serial)
             Serial.end();
-
         USBDevice.detach();
     }
 }
@@ -200,15 +226,13 @@ void setup_mkr1310() {
 void loop_mkr1310() {
     // execution resumes from sleep here
     rtc.disableAlarm();
-    showtime();
-    Serial.println("Wokege");
 
     attackCounter = 0;
     severityLevel = 0;
     // Boolean motionDetected that is changed from the ISR
     if (motionDetected) {
 
-        showtime();
+        timeStamp();
         Serial.print(F("Wakeup was due to motion ("));
 
         // collection logic variables
@@ -226,13 +250,12 @@ void loop_mkr1310() {
         detachInterrupt(digitalPinToInterrupt(PIN_INTERRUPT));
         need_reattach = true;
 
-        while (++attackCounter <= 2) { // make this 2 a define please
+        while (++attackCounter <= MAXIMUM_SCANS) {
             // collect data:
             int i = 0;
             adxlMode(adxl, ADXL_COLLECTION);
             adxl->getInterruptSource();
             while (i < ADXL_SAMPLE_LENGTH) {
-                digitalWrite(PIN_ERRORLED, !digitalRead(PIN_ERRORLED));
 
                 adxl->readAccel(&x, &y, &z);
                 Z_Power_Samples[i] = sq((z - DC_offset) * GRAVITY / (double) ADXL_LSB_PER_G_Z);
@@ -264,18 +287,18 @@ void loop_mkr1310() {
 
             severityLevel = max(severityLevel, periodic_severity);
 
-            if (inactivityInDataEnd(Z_Power_Samples, ADXL_TIME_REST, adxl)) {
-                showtime();
+            if (inactivityInDataEnd(Z_Power_Samples, ADXL_TIME_REST, adxl) && attackCounter <= (MAXIMUM_SCANS - 1)) {
+                timeStamp();
                 Serial.println(F("No need to scan again"));
                 break;
             }
             else {
-                showtime();
+                timeStamp();
                 Serial.println(F("Still some movement, continuing scan"));
             }
         }
 
-        showtime();
+        timeStamp();
         Serial.print("Peak severity of ");
         Serial.print(severityLevel);
         Serial.println(". Exit.");
@@ -291,7 +314,7 @@ void loop_mkr1310() {
     setSeverity(mnd, severityLevel);
     severityLevel = 0; // and viola, reset
 
-    setTSLC(mnd, TSLC() / 60000); // convert ms to minutes;
+    setTSLC(mnd, TSLC() / 60000UL); // convert ms to minutes;
 
     setTemperature(mnd, 25);
 
@@ -299,6 +322,10 @@ void loop_mkr1310() {
     adxl->getInterruptSource();
     adxl->readAccel(&dum.x, &dum.y, &dum.z);
     setIMUBit(mnd, ((abs(dum.x) + abs(dum.y) + abs(dum.z)) > 0));
+    if (!getIMUBit) {
+        TOLC = 0;
+        fullResetADXL(adxl); // reset on failure
+    }
 
     int bat_raw = analogRead(PIN_BATADC);
     // convert ADC reading to an estimated percentage and store
@@ -315,14 +342,14 @@ void loop_mkr1310() {
         next_send_epoch--;
     next_send_epoch += MY_IDENTIFIER;
 
-    showtime();
-    Serial.println(F("Waiting for my turn..."));
+    timeStamp();
+    Serial.println(F("Awake before epoch. Waiting for my turn..."));
     while (rtc.getEpoch() < next_send_epoch) {
         yield(); // ? chilling?
     }
 
     // show what we are sending
-    showtime();
+    timeStamp();
     Serial.print(F("Sending Data: 0x"));
     for (int k = 0; k < sizeof(MND_Compact); ++k) {
         Serial.print(((uint8_t *) &mnd)[k], 16);
@@ -333,11 +360,43 @@ void loop_mkr1310() {
     LoRa.beginPacket();
     LoRa.write((uint8_t *) &mnd, sizeof(MND_Compact)); // Write the data to the packet
     LoRa.endPacket(false);                             // false to block while sending
-    LoRa.sleep();
 
-    showtime();
+    timeStamp();
     Serial.println(F("Sent!"));
     errorOff();
+
+    // get acknowledgement from central node
+
+    LoRa.receive();
+
+    TOLA = millis();
+    while (!ackFlag && (TSLA() < ACK_TIMEOUT))
+        yield();
+
+    if (ackFlag > 0) {
+
+        int byteIndexer = 0;
+        while (LoRa.available() && byteIndexer < sizeof(MND_Ack))
+            ((uint8_t *) &mnd_response)[byteIndexer++] = (uint8_t) LoRa.read();
+
+        timeStamp();
+        Serial.print("Got: ");
+        Serial.print(mnd_response.universal_epoch);
+        Serial.print("  ");
+        Serial.print(mnd_response.universal_millis);
+        Serial.print("  ");
+        Serial.println(mnd_response.weak_signal_please_increase);
+
+        if (getNeedRTC(mnd)) {
+            rtc.setEpoch(mnd_response.universal_epoch);
+            setNeedRTC(mnd, false);
+            timeStamp();
+            Serial.println(F("Clocks Aligned"));
+        }
+    }
+    // reset receiver flag and sleep
+    ackFlag = 0;
+    LoRa.sleep();
 
     // check if we should recompute the DC offset
     if (TSLC() > ADXL_CALIBRATION_INTERVAL) {
@@ -349,7 +408,7 @@ void loop_mkr1310() {
     adxlMode(adxl, ADXL_MOTION);
 
     if (need_reattach) {
-        LowPower.attachInterruptWakeup(PIN_INTERRUPT, wakeuphandler, RISING);
+        LowPower.attachInterruptWakeup(digitalPinToInterrupt(PIN_INTERRUPT), wakeuphandler, RISING);
         need_reattach = false;
     }
 
@@ -365,14 +424,15 @@ void loop_mkr1310() {
     // need to be awake BY the epoch, so wake up 1s before it
     // to complete any other computations
 
-    showtime();
-    Serial.print("I shleep till ");
+    timeStamp();
+    Serial.print("Sleeping until ");
     Serial.println(next_wake_epoch);
 
     // LowPower.deepSleep(next_wake_epoch - rtc.getEpoch());
     // simulated sleeping:
     while (!digitalRead(PIN_INTERRUPT) && rtc.getEpoch() < next_wake_epoch)
         ;
+    mnd.ID = random(1, 5); // for testing
 }
 
 #endif

@@ -18,14 +18,16 @@
 #define SERIALTIMEOUT 10000
 
 // TIMING CONFIGURATION
-#define SLEEP_TIME_MS       5000 // recommend that these be whole seconds
-#define GMTOFFSET           -25200
-#define ADXL_SAMPLE_LENGTH  1000  // The number of accelerometer readings to hold
-#define ADXL_DC_CAPTURE     500   // Samples to take when running DC calibration
-#define ADXL_SAMPLE_TIMEOUT 500UL // ms
+#define SLEEP_TIME_MS           5000 // recommend that these be whole seconds
+#define GMTOFFSET               -25200
+#define ADXL_SAMPLE_LENGTH      1000 // The number of accelerometer readings to hold
+#define ADXL_DC_CAPTURE         250  // Samples to take when running DC calibration
+#define ADXL_SAMPLE_TIMEOUT     50UL // ms
+#define ADXL_CONNECTION_TIMEOUT 5U   // x
+#define MAXIMUM_SCANS           2    // maximum times to repeat intake before sending anyway
 
 // CALIBRATOR SETTINGS
-#define CALIBRATION_TIME_SLICE    0.75     // seconds
+#define CALIBRATION_TIME_SLICE    0.50     // seconds, should be above 0.3
 #define ADXL_CALIBRATION_INTERVAL 900000UL // ms, 900000 ~= 15 minutes
 
 // BATTERY POWER CONFIGURATION
@@ -56,52 +58,20 @@
 #define ADXL_COLLECTION 0x01
 #define ADXL_SETTLING   0x02
 #define ADXL_MOTION     0x04
-// linspace(0, (2*9.81)^2, 16)
-const double thresholdZ[15] = {
-    25.66,
-    51.32,
-    76.98,
-    102.65,
-    128.31,
-    153.97,
-    179.64,
-    205.30,
-    230.96,
-    256.62,
-    282.29,
-    307.95,
-    333.61,
-    359.28,
-    384.94,
-};
-const double thresholdZ_logarithmic[15] = {
-    1.4507,
-    2.1046,
-    3.0532,
-    4.4294,
-    6.4259,
-    9.3223,
-    13.5242,
-    19.6200,
-    28.4634,
-    41.2927,
-    59.9047,
-    86.9057,
-    126.0770,
-    182.9040,
-    265.3448,
-};
 
 // INERTIAL MEASUREMENT SETTINGS
 #define ADXL_SENSITIVITY 2 // 2, 4, 8, 16 (g)
 #define ADXL_FULLRESBIT  1
-#define ADXL_ACT_THRESH  0x0007 // 62.5mg per increment
+#define ADXL_ACT_THRESH  0x0007 // 62.5 mg per increment
+#define MPS2PI           0.6131 // square meters per second per increment
 #define ADXL_TIME_REST   1.2
 #define ADXL_LSB_PER_G_Z 256.0
 #define GRAVITY          9.81
 
 // LORA MODULE SETTINGS & CONFIG
-#define LORA_POWER 4 // 2-17 or 20
+#define ACK_TIMEOUT 1000  // ms
+#define LORA_POWER  4     // 2-17 or 20. starting power for nodes
+#define WEAK_RSSI   -60.0 // test value. nodes whose signals are below this may be asked to increase transmission power
 // the following settings must match on the sender and receiver
 #define USING_CRC false
 #define CHIRPBW   125000UL
@@ -142,6 +112,44 @@ const long LoRaChannelsEU[] = {
     867700000,
     867900000,
     868800000,
+};
+
+// THRESHOLDING CONFIGURATION
+
+// linspace(0, (2*9.81)^2, 16)
+const double thresholdZ[15] = {
+    25.66,
+    51.32,
+    76.98,
+    102.65,
+    128.31,
+    153.97,
+    179.64,
+    205.30,
+    230.96,
+    256.62,
+    282.29,
+    307.95,
+    333.61,
+    359.28,
+    384.94,
+};
+const double thresholdZ_logarithmic[15] = {
+    1.4507,
+    2.1046,
+    3.0532,
+    4.4294,
+    6.4259,
+    9.3223,
+    13.5242,
+    19.6200,
+    28.4634,
+    41.2927,
+    59.9047,
+    86.9057,
+    126.0770,
+    182.9040,
+    265.3448,
 };
 
 void setup_mkr1310();
