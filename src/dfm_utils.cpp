@@ -12,10 +12,10 @@
 
 #include <LoRa.h>
 #include <SPI.h>
-#include <time.h>
 #include <SparkFun_ADXL345.h>
+#include <time.h>
 
-void showtime() {
+void timeStamp() {
     Serial.print(F("-> "));
     Serial.print((millis() / 1000.0), 1);
     Serial.print(F(": "));
@@ -170,7 +170,7 @@ int getDCOffset(ADXL345 *adxl, double t_increment) {
     unsigned long tols = 0; // local implementation of TOLS
                             // DATA COLLECTION SECTION
 
-    showtime();
+    timeStamp();
     Serial.print(F("Calibrating quiescent bias. Data: "));
 
     detachInterrupt(digitalPinToInterrupt(PIN_INTERRUPT));
@@ -199,7 +199,12 @@ int getDCOffset(ADXL345 *adxl, double t_increment) {
     int region_start; // used when looking at sections of data
     int region_end;   // used when looking at sections of data
 
-    double Fs      = bwCodeToFs(adxl->get_bw_code()); // Frequency of the samples
+    double Fs = bwCodeToFs(adxl->get_bw_code()); // Frequency of the samples
+
+    // error checking: avoid divide by zero on read error
+    if (Fs <= 0.00 || t_increment <= 0.00)
+        return 0;
+
     int num_ranges = (int) ceil(ADXL_DC_CAPTURE / Fs / t_increment);
     int list_of_ranges[num_ranges];
     int region_samples = floor(t_increment * Fs);
@@ -246,10 +251,10 @@ int getDCOffset(ADXL345 *adxl, double t_increment) {
         accumulator += Z_Raw_Samples[m];
     }
 
-    bias = accumulator / region_samples;
+    bias = accumulator / max(region_samples, 1);
 
     Serial.println();
-    showtime();
+    timeStamp();
     Serial.print(F("Got a bias of "));
     Serial.print(bias);
     Serial.println(" LSBs");
@@ -260,10 +265,15 @@ int getDCOffset(ADXL345 *adxl, double t_increment) {
 bool inactivityInDataEnd(double *zdata, double LastXSeconds, ADXL345 *adxl) {
     double Fs              = bwCodeToFs(adxl->get_bw_code());
     int num_samples        = floor(LastXSeconds * Fs);
-    double ZThresholdPower = sq((double) ADXL_ACT_THRESH * 62.5 / 1000.0);
+    double ZThresholdPower = sq((double) ADXL_ACT_THRESH * MPS2PI);
     for (int i = ADXL_SAMPLE_LENGTH - num_samples; i < ADXL_SAMPLE_LENGTH; ++i) {
         if (zdata[i] > ZThresholdPower) {
             return false;
+        }
+        else {
+            Serial.print(zdata[i]);
+            Serial.print(" not greater than ");
+            Serial.println(ZThresholdPower);
         }
     }
     return true;
