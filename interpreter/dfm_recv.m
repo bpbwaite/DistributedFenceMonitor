@@ -1,7 +1,7 @@
 %/*
 %  FILE: dfm_recv.m
 %  VERSION: 1.1.0
-%  DATE: 7 April 2023
+%  DATE: 10 April 2023
 %  PROJECT: Distributed Fence Monitor Capstone
 %  AUTHORS: Briellyn Braithwaite
 %  DESCRIPTION: Primary DFM Serial Interpreter
@@ -37,7 +37,7 @@ timeout = 30; % s
 gmtoffset = -25200; % s
 
 %% Connection
-s = serialport("COM8", 115200);
+s = serialport("COM5", 115200);
 s.Timeout = timeout;
 
 %% Open status figure
@@ -51,7 +51,7 @@ hold off
 
 [alert, Fs1] = audioread("alert.wav");
 [ding, Fs2] = audioread("ding.wav");
-[error, Fs3] = audioread("error.wav");
+[sense, Fs3] = audioread("error.wav");
 
 %%
 disp("Setup complete!")
@@ -127,15 +127,17 @@ while 1
     
     disp('----')
     
-    % play any sound effects
-    % on receive data
-    % on high severity
+    % play required sound effects
+    % decending through this statement sets priority
+    
     if databuf.sever(n) > 5
-        sound(alert, Fs1)
+        sound(alert, Fs1) % on high severity
     elseif ~databuf.hasaccel(n)
-        sound(error, Fs3)
+        sound(sense, Fs3)
+    elseif (n>=2) && databuf.packetnum(n) ~= (databuf.packetnum(n-1) + 1)
+        sound(sense, Fs3) % get a different sound for this
     else
-        sound(ding, Fs2)
+        sound(ding, Fs2) % on receive data
     end
     
     % update graph
@@ -168,17 +170,8 @@ while 1
     xlabel('DEVICES')
     ylabel('PARAMETER VALUE')
     ylim([-5 115])
-    yticks(0:10:100)
+    yticks(0:10:130)
     title('SUPER SYSTEM STATUS')
-    legend(...
-        'Temperature (\circC)',...
-        'Battery (%)',...
-        'Severity',...
-        'Link Margin (dB)',...
-        'Calibration (min)',...
-        'LoRa Channel',...
-        'Connections',...
-        'Uptime (min)')
     
     for k = 1:max(size(fieldnames(device_stats)))
         xtips1 = b(k).XEndPoints;
@@ -188,7 +181,23 @@ while 1
             'VerticalAlignment','bottom')
     end
     
+    hold on
+    for k = devices_tracking(1:end-1)
+       plot([k + 0.5, k + 0.5], [-50 150], 'k') 
+    end
+    hold off
    
+    legend(...
+        'Temperature (\circC)',...
+        'Battery (%)',...
+        'Severity',...
+        'Link Margin (dB)',...
+        'Calibration (min)',...
+        'LoRa Channel',...
+        'Connections',...
+        'Uptime (min)',...
+        '')
+    
     drawnow
     
     n = n + 1;
