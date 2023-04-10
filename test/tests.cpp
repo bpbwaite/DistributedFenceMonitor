@@ -24,8 +24,15 @@ volatile bool data_ready     = false;
 
 // global variables and objects
 AccelData accelData;
+// functions
 
-// Interrupt Service Routines:
+void test_block_on_reset() {
+    errorOn();
+    while (digitalRead(PIN_SW1)) {
+        yield();
+    }
+    errorOff();
+}
 void isr() {
     motionDetected = true; // global variable
 }
@@ -321,12 +328,12 @@ void test_detection(void) {
 #define THRESHOLD_Y1 75   // First Threshold for the Y-axis
 #define THRESHOLD_Z1 75   // First Threshold for the Z-axis
 
-    AccelData accelerometer[SIZE]; //Data from the accelerometer.
-    int x_accelerometer[SIZE]; // Data from the accelerometer's x-axis
-    int y_accelerometer[SIZE]; // Data from the accelerometer's y-axis
-    int z_accelerometer[SIZE]; // Data from the accelerometer's z-axis
-    int accel_reading = 0;     // Location within the accelerometer data arrays
-    bool interrupted  = false; // Interrupt flag
+    AccelData accelerometer[SIZE]; // Data from the accelerometer.
+    int x_accelerometer[SIZE];     // Data from the accelerometer's x-axis
+    int y_accelerometer[SIZE];     // Data from the accelerometer's y-axis
+    int z_accelerometer[SIZE];     // Data from the accelerometer's z-axis
+    int accel_reading = 0;         // Location within the accelerometer data arrays
+    bool interrupted  = false;     // Interrupt flag
     int x, y, z;
     // variable delcaration
     int accelX, accelY, accelZ;
@@ -571,7 +578,6 @@ void adtomatlab(Serial_ &s, const AccelData d) {
     for (int nb = 0; nb < sizeof(AccelData); ++nb)
         s.write((unsigned char) ((uint8_t *) &d)[nb]);
 }
-
 void test_power(void) {
     pinMode(PIN_STATUSLED, OUTPUT);
     indicateOff();
@@ -641,7 +647,6 @@ void test_isr2(void) {
         motionDetected = false;
     }
 }
-
 void test_russey_mobile(void) {
 #define PIN_SAMPLE_INCREMENT A6
 #define SAMPLES_PER_PUSH     3
