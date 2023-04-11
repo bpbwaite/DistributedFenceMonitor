@@ -48,10 +48,10 @@ drawnow
 hold off
 
 %% Audio setup
-
-[alert, Fs1] = audioread("alert.wav");
-[ding, Fs2] = audioread("ding.wav");
-[sense, Fs3] = audioread("error.wav");
+Fswav = 44100;
+[alert, ~] = audioread("alert.wav");
+[ding, ~] = audioread("ding.wav");
+[sense, ~] = audioread("error.wav");
 
 %%
 disp("Setup complete!")
@@ -131,13 +131,13 @@ while 1
     % decending through this statement sets priority
     
     if databuf.sever(n) > 5
-        sound(alert, Fs1) % on high severity
+        sound(alert, Fswav) % on high severity
     elseif ~databuf.hasaccel(n)
-        sound(sense, Fs3)
+        sound(sense, Fswav)
     elseif (n>=2) && databuf.packetnum(n) ~= (databuf.packetnum(n-1) + 1)
-        sound(sense, Fs3) % get a different sound for this
+        sound(sense, Fswav) % get a different sound for this
     else
-        sound(ding, Fs2) % on receive data
+        sound(ding, Fswav) % on receive data
     end
     
     % update graph
@@ -150,7 +150,6 @@ while 1
     device_stats.tslc(databuf.id(n)) = databuf.tslc(n);
     device_stats.channel(databuf.id(n)) = fch;
     device_stats.cons(databuf.id(n)) = databuf.cons(n);
-    device_stats.uptime(databuf.id(n)) = utm;
     
     b = bar(devices_tracking,...
         [
@@ -161,7 +160,6 @@ while 1
         device_stats.tslc
         device_stats.channel
         device_stats.cons
-        device_stats.uptime
         ]',...    
         'grouped');
     
@@ -169,8 +167,8 @@ while 1
     b(1).BarWidth = 0.96;
     xlabel('DEVICES')
     ylabel('PARAMETER VALUE')
-    ylim([-5 115])
-    yticks(0:10:130)
+    ylim([-5 110])
+    yticks(0:10:100)
     title('SUPER SYSTEM STATUS')
     
     for k = 1:max(size(fieldnames(device_stats)))
@@ -182,11 +180,11 @@ while 1
     end
     
     hold on
-    for k = devices_tracking(1:end-1)
+    for k = devices_tracking(1:end)
        plot([k + 0.5, k + 0.5], [-50 150], 'k') 
     end
     hold off
-   
+
     legend(...
         'Temperature (\circC)',...
         'Battery (%)',...
@@ -194,9 +192,7 @@ while 1
         'Link Margin (dB)',...
         'Calibration (min)',...
         'LoRa Channel',...
-        'Connections',...
-        'Uptime (min)',...
-        '')
+        'Connections')
     
     drawnow
     
