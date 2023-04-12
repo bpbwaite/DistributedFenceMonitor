@@ -119,3 +119,64 @@ if found_quiet
     figure(1), hold on
     plot(t, databuf.z - m, 'b', 'linewidth', 1);
 end
+
+
+%% New: Bruder's recommendation
+figure(2), hold on
+sustained_duration = 4; % how many samples to average
+z_mean = zeros(1,sustained_duration);
+for idx = (sustained_duration+1):length(z_pow)
+    z_mean = [z_mean mean(z_pow((idx-sustained_duration):idx))];
+end
+plot(t, z_mean, 'k', 'linewidth', 3)
+legend('Power',['Power (LPF mean of ', num2str(sustained_duration), ' samples)'])
+
+
+
+%% Finite Filter Tuning
+format longg
+figure(10)
+hold off
+plot(0,0)
+hold on
+grid on 
+
+plot(t, z_pow, 'color', [0.9,0.9,0.9])
+Fs = 100;
+lpf_hz = 8;
+
+plot(t, abs(lowpass(z_pow, lpf_hz, Fs,...
+    'StopbandAttenuation', 10, 'ImpulseResponse','fir')), 'b')
+
+% FIR filter
+omega = 2*pi*lpf_hz ; % cutoff frequency rad/sample
+N = 16;
+tau = (0:N-1)./Fs;
+FIR = exp(-1*omega*tau); % inverse laplace LPF 1/(s+Wc)
+FIR = FIR./sum(FIR); % force filter to have no DC offset
+
+y = conv(z_pow, FIR);
+plot(t, y(1:length(t)), 'r');
+
+X = z_pow;
+H = FIR;
+
+% replicates conv('full')
+L = length(X)+length(H)-1;
+y = zeros(1, L);
+H = [H zeros(1,length(X)-length(H))];
+
+for n=0:length(H)-1
+    y(n+1) = 0;
+    for k = 0:n
+        y(n+1) = y(n+1) + X(k+1) * H(n - k + 1);
+    end
+end
+
+plot(t, y(1:length(t)), 'm')
+
+xlabel('t (s)')
+ylabel('Power')
+
+figure(11),
+freqz(FIR, 1, 1000, 100)
