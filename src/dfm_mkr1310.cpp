@@ -28,7 +28,7 @@
 
 // only defines unique to nodes that vary from board to board
 
-#define MY_IDENTIFIER 0x02 // 0-13; small scale build ID determines turn
+#define MY_IDENTIFIER 0x03 // 0-13; small scale build ID determines turn
 #define SET_RTC       true
 
 // global variables and objects
@@ -132,6 +132,7 @@ void setup_mkr1310() {
         adxl->readAccel(&dum.x, &dum.y, &dum.z);
         if ((abs(dum.x) + abs(dum.y) + abs(dum.z)) <= 0) {
             Serial.println(F("No ADXL on SPIBUS, retrying..."));
+            delay(10);
         }
         else
             break;
@@ -284,17 +285,55 @@ void loop_mkr1310() {
             }
 
             //****** Detection Logic ******//
-            double currentMax     = 0;
+
+            // set up filter
+            double FIR[FIRSIZE];
+            double t[FIRSIZE];
+            double Fs =
+                bwCodeToFs(ADXL_BW); // TODO everywhere else, instead of getting from adxl, use the predefined constant
+            double omega_cutoff = (2.0 * PI * LPF_HZ);
+
+            double acc = 0;
+            for (int k = 0; k < FIRSIZE; ++k) {
+                t[k]   = k / Fs;
+                FIR[k] = exp(-1.0 * omega_cutoff * t[k]);
+                acc += FIR[k];
+            }
+            Serial.print("FIR Values: ");
+            for (int k = 0; k < FIRSIZE; ++k) {
+                FIR[k] /= acc;
+                Serial.print(FIR[k], 4);
+                Serial.print(',');
+            }
+            Serial.println();
+            Serial.println("Original Data: ");
+            for (int n = 0; n < ADXL_SAMPLE_LENGTH; ++n) {
+                Serial.print(Z_Power_Samples[n], 5);
+                Serial.print(',');
+            }
+            double data_maximum   = 0;
             int periodic_severity = 0;
-            for (i = 0; i < ADXL_SAMPLE_LENGTH; ++i) {
-                if (Z_Power_Samples[i] > currentMax) {
+            Serial.println();
+            Serial.println("Filtered Data: ");
+            int L = ADXL_SAMPLE_LENGTH + FIRSIZE - 1;
+            for (int n = 0; n < L; ++n) {
+                double Y = 0;
+                for (int k = 0; k <= n; ++k) {
+                    if ((n - k) < FIRSIZE && (k < ADXL_SAMPLE_LENGTH)) {
+                        Y += Z_Power_Samples[k] * FIR[n - k];
+                    }
+                }
+                Serial.print(Y, 5);
+                Serial.print(", ");
+                if (Y > data_maximum) {
                     // this will be checking for the current max energy
-                    currentMax = Z_Power_Samples[i];
+                    data_maximum = Y;
                 }
             }
+
             //  following for-loop should loop until thresholdZ is no longer passed
             for (i = 0; i < 15; ++i) {
-                if (currentMax < thresholdZ_logarithmic[i])
+                if (data_maximum < thresholdZ_logarithmic[i])
                     break;
                 periodic_severity++;
             }
@@ -306,7 +345,7 @@ void loop_mkr1310() {
                 Serial.println(F("No need to scan again"));
                 break;
             }
-            else {
+            else if (attackCounter != MAXIMUM_SCANS) {
                 timeStamp();
                 Serial.println(F("Still some movement, continuing scan"));
             }
@@ -350,11 +389,7 @@ void loop_mkr1310() {
     setConnections(mnd, 1);
 
     // WAIT UNTIL TIME TO SEND IS UPON US
-
-    next_send_epoch = rtc.getEpoch() + (SLEEP_TIME_MS / 1000);
-    while (next_send_epoch % (SLEEP_TIME_MS / 1000) != 0)
-        next_send_epoch--;
-    next_send_epoch += MY_IDENTIFIER;
+    next_send_epoch = next_wake_epoch + 1; // actually the "last" wake epoch
 
     timeStamp();
     Serial.println(F("Awake before epoch. Waiting for my turn..."));
@@ -438,9 +473,7 @@ void loop_mkr1310() {
     while (next_wake_epoch % (SLEEP_TIME_MS / 1000) != 0)
         next_wake_epoch--;
 
-    next_wake_epoch -= 1;
-    // need to be awake BY the epoch, so wake up 1s before it
-    // to complete any other computations
+    next_wake_epoch += MY_IDENTIFIER;
 
     timeStamp();
     Serial.print("Sleeping until ");
