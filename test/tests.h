@@ -10,6 +10,8 @@
 void isr();
 
 // Available test functions:
+void test_block_on_reset(void);
+
 void test_errors(void);
 void test_log_bat_SD(void);
 void test_threshes(void);

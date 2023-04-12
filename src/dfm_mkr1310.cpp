@@ -242,7 +242,7 @@ void loop_mkr1310() {
 
     attackCounter = 0;
     severityLevel = 0;
-    // Boolean motionDetected that is changed from the ISR
+    // Enter into this loop if the node is in motion and prepare for detection logic
     if (motionDetected) {
 
         timeStamp();
@@ -262,12 +262,13 @@ void loop_mkr1310() {
         // Data Collection mode
         detachInterrupt(digitalPinToInterrupt(PIN_INTERRUPT));
         need_reattach = true;
-
+        //***************DATA COLLECTION LOOP*****************//
         while (++attackCounter <= MAXIMUM_SCANS) {
             // collect data:
             int i = 0;
-            adxlMode(adxl, ADXL_COLLECTION);
+            adxlMode(adxl, ADXL_COLLECTION); // change to collection mode
             adxl->getInterruptSource();
+            // store data for ADXL_SAMPLE_LENGTH samples
             while (i < ADXL_SAMPLE_LENGTH) {
 
                 adxl->readAccel(&x, &y, &z);
@@ -282,7 +283,7 @@ void loop_mkr1310() {
                 i++;
             }
 
-            // Renzo's algorithm
+            //****** Detection Logic ******//
             double currentMax     = 0;
             int periodic_severity = 0;
             for (i = 0; i < ADXL_SAMPLE_LENGTH; ++i) {
@@ -297,9 +298,9 @@ void loop_mkr1310() {
                     break;
                 periodic_severity++;
             }
-
+            // ************ END DETECTION LOGIC ************//
             severityLevel = max(severityLevel, periodic_severity);
-
+            // Check for inactivity and stop reading if there is data below threshold
             if (inactivityInDataEnd(Z_Power_Samples, ADXL_TIME_REST, adxl) && attackCounter <= (MAXIMUM_SCANS - 1)) {
                 timeStamp();
                 Serial.println(F("No need to scan again"));
@@ -310,7 +311,7 @@ void loop_mkr1310() {
                 Serial.println(F("Still some movement, continuing scan"));
             }
         }
-
+        //***************END DATA COLLECTION LOOP*****************//
         timeStamp();
         Serial.print("Peak severity of ");
         Serial.print(severityLevel);
