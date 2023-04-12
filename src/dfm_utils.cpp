@@ -53,7 +53,7 @@ void fullResetADXL(ADXL345 *adxl) {
     adxl->setSpiBit(0); // allow 4-Wire SPI from ADXL to main
     adxl->setRangeSetting(ADXL_SENSITIVITY);
     adxl->setFullResBit(ADXL_FULLRESBIT);
-    adxl->set_bw(ADXL345_BW_50);
+    adxl->set_bw(ADXL_BW);
     adxl->setInterruptLevelBit(ADXL_RISING); // means the pin RISES on interrupt
 
     adxl->setActivityAc(1); // AC coupled activitiy

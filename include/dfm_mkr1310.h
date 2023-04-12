@@ -20,7 +20,7 @@
 // TIMING CONFIGURATION
 #define SLEEP_TIME_MS           5000 // recommend that these be whole seconds
 #define GMTOFFSET               -25200
-#define ADXL_SAMPLE_LENGTH      1000 // The number of accelerometer readings to hold
+#define ADXL_SAMPLE_LENGTH      200  // The number of accelerometer readings to hold
 #define ADXL_DC_CAPTURE         250  // Samples to take when running DC calibration
 #define ADXL_SAMPLE_TIMEOUT     50UL // ms
 #define ADXL_CONNECTION_TIMEOUT 5U   // x
@@ -29,6 +29,27 @@
 // CALIBRATOR SETTINGS
 #define CALIBRATION_TIME_SLICE    0.50     // seconds, should be above 0.3
 #define ADXL_CALIBRATION_INTERVAL 900000UL // ms, 900000 ~= 15 minutes
+
+// FILTER SETTINGS
+#define FIRSIZE 16
+#define LPF_HZ  8
+
+// INERTIAL MEASUREMENT CONSTANTS
+#define ADXL_FALLING    1
+#define ADXL_RISING     0
+#define ADXL_COLLECTION 0x01
+#define ADXL_SETTLING   0x02
+#define ADXL_MOTION     0x04
+
+// INERTIAL MEASUREMENT SETTINGS
+#define ADXL_BW          ADXL345_BW_50
+#define ADXL_SENSITIVITY 2 // 2, 4, 8, 16 (g)
+#define ADXL_FULLRESBIT  1
+#define ADXL_ACT_THRESH  0x0007 // 62.5 mg per increment
+#define MPS2PI           0.6131 // square meters per second per increment
+#define ADXL_TIME_REST   0.8
+#define ADXL_LSB_PER_G_Z 256.0
+#define GRAVITY          9.81
 
 // BATTERY POWER CONFIGURATION
 #define VBAT_HUNDRED 4.10
@@ -50,24 +71,7 @@
 #define PIN_ADXLCS2   A4 // chipselect pin for the secondary accelerometer
 #define PIN_INTERRUPT 7
 #define PIN_DHT       4
-
-#define ADXL_VOLTAGE 303 // 303 for 3.3, 205 for 2.5
-
-// INERTIAL MEASUREMENT CONSTANTS
-#define ADXL_FALLING    1
-#define ADXL_RISING     0
-#define ADXL_COLLECTION 0x01
-#define ADXL_SETTLING   0x02
-#define ADXL_MOTION     0x04
-
-// INERTIAL MEASUREMENT SETTINGS
-#define ADXL_SENSITIVITY 2 // 2, 4, 8, 16 (g)
-#define ADXL_FULLRESBIT  1
-#define ADXL_ACT_THRESH  0x0007 // 62.5 mg per increment
-#define MPS2PI           0.6131 // square meters per second per increment
-#define ADXL_TIME_REST   1.2
-#define ADXL_LSB_PER_G_Z 256.0
-#define GRAVITY          9.81
+#define ADXL_VOLTAGE  303 // 303 for 3.3, 205 for 2.5
 
 // LORA MODULE SETTINGS & CONFIG
 #define ACK_TIMEOUT 1000  // ms
