@@ -101,7 +101,11 @@ while 1
     fprintf('ID: 0x%02X\n', databuf.id(n));
     fprintf('Packet: #%d\n', databuf.packetnum(n));
     fprintf('Battery Charge: %d%%\n', databuf.bat(n));
-    fprintf('Temperature: %dC\n', databuf.temp(n));
+    temp = databuf.temp(n);
+    if(temp > 126)
+        temp = 0;
+    end
+    fprintf('Temperature: %dC\n', temp);
     
     fprintf('Severity: 0x%01X/0xF\n', databuf.sever(n));
     fprintf('Connections: %d/63\n', databuf.cons(n));
@@ -134,16 +138,15 @@ while 1
         sound(alert, Fswav) % on high severity
     elseif ~databuf.hasaccel(n)
         sound(sense, Fswav)
-    elseif (n>=2) && databuf.packetnum(n) ~= (databuf.packetnum(n-1) + 1)
-        sound(sense, Fswav) % get a different sound for this
     else
         sound(ding, Fswav) % on receive data
     end
     
     % update graph
-    devices_tracking = 1:max(databuf.id);
+    maxboards = 5;
+    devices_tracking = 1:min([max(databuf.id) maxboards]);
     
-    device_stats.temp(databuf.id(n)) = databuf.temp(n);
+    device_stats.temp(databuf.id(n)) = temp;
     device_stats.bat(databuf.id(n)) = databuf.bat(n);
     device_stats.sever(databuf.id(n)) = databuf.sever(n);
     device_stats.margin(databuf.id(n)) = floor(abs(databuf.rssi(n) - No_Signal));
