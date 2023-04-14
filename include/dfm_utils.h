@@ -129,6 +129,8 @@ void setTemperature(MND_Compact &, int);
 void setIMUBit(MND_Compact &, bool);
 void setBatt(MND_Compact &, int);
 void setConnections(MND_Compact &, int);
+void CalculatePrintFIR(double[]);
+int CalculatePrintSeverity(int, double[], double[]);
 
 // Receiver Functions
 void epchtostr(char *, uint32_t); // deprecated

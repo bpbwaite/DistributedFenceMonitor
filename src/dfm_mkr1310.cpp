@@ -51,6 +51,7 @@ volatile int ackFlag = 0; // bytes received in acknowledgement
 int DC_offset = 0;
 double Z_Power_Samples[ADXL_SAMPLE_LENGTH];
 int severityLevel = 0;
+double FIR[FIRSIZE];
 
 // isr related items
 volatile bool motionDetected = false;
@@ -206,6 +207,10 @@ void setup_mkr1310() {
         Serial.println(F("Temperature Sensor Detected"));
     }
 
+    // Calculate & Print FIR
+    CalculatePrintFIR(FIR);
+    Serial.println();
+
     // CALIBRATE GRAVITATIONAL BIAS
     DC_offset = getDCOffset(adxl, CALIBRATION_TIME_SLICE);
     TOLC      = millis();
@@ -248,17 +253,16 @@ void loop_mkr1310() {
 
         timeStamp();
         Serial.print(F("Wakeup was due to motion ("));
+        Serial.println();
 
         // collection logic variables
         int x, y, z;
-
         adxl->readAccel(&x, &y, &z);
         Serial.print("Z=");
         Serial.print(z);
         Serial.print("/");
         Serial.print(DC_offset);
         Serial.println(")");
-
         motionDetected = false;
         // Data Collection mode
         detachInterrupt(digitalPinToInterrupt(PIN_INTERRUPT));
@@ -286,59 +290,6 @@ void loop_mkr1310() {
 
             //****** Detection Logic ******//
 
-            // set up filter
-            double FIR[FIRSIZE];
-            double t[FIRSIZE];
-            double Fs =
-                bwCodeToFs(ADXL_BW); // TODO everywhere else, instead of getting from adxl, use the predefined constant
-            double omega_cutoff = (2.0 * PI * LPF_HZ);
-
-            double acc = 0;
-            for (int k = 0; k < FIRSIZE; ++k) {
-                t[k]   = k / Fs;
-                FIR[k] = exp(-1.0 * omega_cutoff * t[k]);
-                acc += FIR[k];
-            }
-            Serial.print("FIR Values: ");
-            for (int k = 0; k < FIRSIZE; ++k) {
-                FIR[k] /= acc;
-                Serial.print(FIR[k], 4);
-                Serial.print(',');
-            }
-            Serial.println();
-            Serial.println("Original Data: ");
-            for (int n = 0; n < ADXL_SAMPLE_LENGTH; ++n) {
-                Serial.print(Z_Power_Samples[n], 5);
-                Serial.print(',');
-            }
-            double data_maximum   = 0;
-            int periodic_severity = 0;
-            Serial.println();
-            Serial.println("Filtered Data: ");
-            int L = ADXL_SAMPLE_LENGTH + FIRSIZE - 1;
-            for (int n = 0; n < L; ++n) {
-                double Y = 0;
-                for (int k = 0; k <= n; ++k) {
-                    if ((n - k) < FIRSIZE && (k < ADXL_SAMPLE_LENGTH)) {
-                        Y += Z_Power_Samples[k] * FIR[n - k];
-                    }
-                }
-                Serial.print(Y, 5);
-                Serial.print(", ");
-                if (Y > data_maximum) {
-                    // this will be checking for the current max energy
-                    data_maximum = Y;
-                }
-            }
-
-            //  following for-loop should loop until thresholdZ is no longer passed
-            for (i = 0; i < 15; ++i) {
-                if (data_maximum < thresholdZ_logarithmic[i])
-                    break;
-                periodic_severity++;
-            }
-            // ************ END DETECTION LOGIC ************//
-            severityLevel = max(severityLevel, periodic_severity);
             // Check for inactivity and stop reading if there is data below threshold
             if (inactivityInDataEnd(Z_Power_Samples, ADXL_TIME_REST, adxl) && attackCounter <= (MAXIMUM_SCANS - 1)) {
                 timeStamp();
@@ -351,7 +302,9 @@ void loop_mkr1310() {
             }
         }
         //***************END DATA COLLECTION LOOP*****************//
+
         timeStamp();
+        severityLevel = CalculatePrintSeverity(severityLevel, Z_Power_Samples, FIR);
         Serial.print("Peak severity of ");
         Serial.print(severityLevel);
         Serial.println(". Exit.");

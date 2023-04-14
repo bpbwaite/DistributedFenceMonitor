@@ -276,6 +276,62 @@ bool inactivityInDataEnd(double *zdata, double LastXSeconds, ADXL345 *adxl) {
     }
     return true;
 }
+void CalculatePrintFIR(double FIR[]) {
+
+    double t[FIRSIZE];
+    double Fs = bwCodeToFs(ADXL_BW); // TODO everywhere else, instead of getting from adxl, use the predefined constant
+    double omega_cutoff = (2.0 * PI * LPF_HZ);
+    double acc          = 0;
+    for (int k = 0; k < FIRSIZE; ++k) {
+        t[k]   = k / Fs;
+        FIR[k] = exp(-1.0 * omega_cutoff * t[k]);
+        acc += FIR[k];
+    }
+
+    Serial.print("FIR Values: ");
+    for (int k = 0; k < FIRSIZE; ++k) {
+        FIR[k] /= acc;
+        Serial.print(FIR[k], 4);
+        Serial.print(',');
+    }
+}
+
+int CalculatePrintSeverity(int severityLevel, double Z_Power_Samples[], double FIR[]) {
+    Serial.println("Original Data: ");
+    for (int n = 0; n < ADXL_SAMPLE_LENGTH; ++n) {
+        Serial.print(Z_Power_Samples[n], 5);
+        Serial.print(',');
+    }
+    double data_maximum   = 0;
+    int periodic_severity = 0;
+    Serial.println();
+    Serial.println("Filtered Data: ");
+    int L = ADXL_SAMPLE_LENGTH + FIRSIZE - 1;
+    for (int n = 0; n < L; ++n) {
+        double Y = 0;
+        for (int k = 0; k <= n; ++k) {
+            if ((n - k) < FIRSIZE && (k < ADXL_SAMPLE_LENGTH)) {
+                Y += Z_Power_Samples[k] * FIR[n - k];
+            }
+        }
+        Serial.print(Y, 5);
+        Serial.print(", ");
+        if (Y > data_maximum) {
+            // this will be checking for the current max energy
+            data_maximum = Y;
+        }
+    }
+
+    //  following for-loop should loop until thresholdZ is no longer passed
+    for (int i = 0; i < 15; ++i) {
+        if (data_maximum < thresholdZ_logarithmic[i])
+            break;
+        periodic_severity++;
+    }
+
+    severityLevel = max(severityLevel, periodic_severity);
+    return severityLevel;
+}
 
 uint8_t maxPayload(int region, int sf, long bw) {
     // get the max payload in bytes for different regions
