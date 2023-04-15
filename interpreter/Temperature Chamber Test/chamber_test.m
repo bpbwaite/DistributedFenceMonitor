@@ -22,7 +22,7 @@ chamber = [20.4, -1.4, -0.8, -0.6, -0.4, -0.3, -0.3, -0.1, -0.1, -0.2, -0.2, -0.
 cpu = [20.6, 1.5, 1.1, 1.0, 0.9, 0.8, 0.9, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8];
 
 subplot(2,2,1)
-plot(t1, chamber, 'b', t1, cpu, 'r')
+plot(t1, chamber, 'b', t1, cpu, 'r', 'linewidth', 2)
 grid on
 xlabel('t (min)')
 ylabel('Temp (\circC)')
@@ -35,7 +35,7 @@ chamber = [-0.2, -0.2, -0.1, -0.2, -0.2, -0.1, -0.2];
 cpu = [0.9, 0.8, 0.9, 0.8, 0.8, 0.8, 0.8];
 
 subplot(2,2,2)
-plot(t2, chamber, 'b', t2, cpu, 'r')
+plot(t2, chamber, 'b', t2, cpu, 'r', 'linewidth', 2)
 grid on
 xlabel('t (min)')
 ylabel('Temp (\circC)')
@@ -48,7 +48,7 @@ chamber = [50.3, 50.4, 50.4, 50.2, 50.4, 50.4, 50.3];
 cpu = [49.0, 49.7, 49.9, 50.0, 50.0, 50.1, 50.1];
 
 subplot(2,2,3)
-plot(t3, chamber, 'b', t3, cpu, 'r')
+plot(t3, chamber, 'b', t3, cpu, 'r', 'linewidth', 2)
 grid on
 xlabel('t (min)')
 ylabel('Temp (\circC)')
@@ -61,7 +61,7 @@ chamber = [50.4, 50.4, 50.3, 50.4, 50.4, 50.4, 50.4];
 cpu = [50.2, 50.2, 50.3, 50.3, 50.2, 50.4, 50.4];
 
 subplot(2,2,4)
-plot(t4, chamber, 'b', t4, cpu, 'r')
+plot(t4, chamber, 'b', t4, cpu, 'r', 'linewidth', 2)
 grid on
 xlabel('t (min)')
 ylabel('Temp (\circC)')
