@@ -10,7 +10,7 @@
 
 %% Load Data & Setup
 cd(fileparts(matlab.desktop.editor.getActiveFilename)); % Set the working dir to dir of this file
-test_name = 'accel_5.mat';
+test_name = 'accel_9.mat';
 close all
 load(test_name)
 

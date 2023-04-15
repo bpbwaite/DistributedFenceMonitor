@@ -37,7 +37,11 @@ timeout = 30; % s
 gmtoffset = -25200; % s
 
 %% Connection
-s = serialport("COM5", 115200);
+try
+    s = serialport("COM5", 115200);
+catch
+    error('Ensure COM Port set correctly and Arduino is Connected!')
+end
 s.Timeout = timeout;
 
 %% Open status figure
