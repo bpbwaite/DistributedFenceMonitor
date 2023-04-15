@@ -342,7 +342,15 @@ void loop_mkr1310() {
     setConnections(mnd, 1);
 
     // WAIT UNTIL TIME TO SEND IS UPON US
-    next_send_epoch = next_wake_epoch + 1; // actually the "last" wake epoch
+
+    if (rtc.getEpoch() >= next_wake_epoch + 1) { // triggers if long collection
+        // find out when to set my alarm for
+        next_wake_epoch = rtc.getEpoch() + (SLEEP_TIME_MS / 1000);
+        while (next_wake_epoch % (SLEEP_TIME_MS / 1000) != 0)
+            next_wake_epoch--;
+        next_wake_epoch += MY_IDENTIFIER;
+    }
+    next_send_epoch = next_wake_epoch + 1; // generally actually the "last" wake epoch
 
     timeStamp();
     Serial.println(F("Awake before epoch. Waiting for my turn..."));
