@@ -1,7 +1,7 @@
 /*
   FILE: DFM_MKR1310.H
-  VERSION: 0.3.0
-  DATE: 18 March 2023
+  VERSION: 1.0.0
+  DATE: 16 April 2023
   PROJECT: Distributed Fence Monitor Capstone
   AUTHORS: Briellyn Braithwaite, Jack Ramsay
   DESCRIPTION: MKR1310 Boards Configuration Defines
@@ -20,10 +20,10 @@
 // TIMING CONFIGURATION
 #define SLEEP_TIME_MS           5000 // recommend that these be whole seconds
 #define GMTOFFSET               -25200
-#define ADXL_SAMPLE_LENGTH      200  // The number of accelerometer readings to hold
-#define ADXL_DC_CAPTURE         250  // Samples to take when running DC calibration
+#define ADXL_SAMPLE_LENGTH      500  // The number of accelerometer readings to hold
+#define ADXL_DC_CAPTURE         300  // Samples to take when running DC calibration
 #define ADXL_SAMPLE_TIMEOUT     50UL // ms
-#define ADXL_CONNECTION_TIMEOUT 5U   // x
+#define ADXL_CONNECTION_TIMEOUT 5U   // how many x
 #define MAXIMUM_SCANS           2    // maximum times to repeat intake before sending anyway
 
 // CALIBRATOR SETTINGS
@@ -74,9 +74,10 @@
 #define ADXL_VOLTAGE  303 // 303 for 3.3, 205 for 2.5
 
 // LORA MODULE SETTINGS & CONFIG
-#define ACK_TIMEOUT 1000  // ms
-#define LORA_POWER  4     // 2-17 or 20. starting power for nodes
-#define WEAK_RSSI   -60.0 // test value. nodes whose signals are below this may be asked to increase transmission power
+#define LORA_CONNECTION_TIMEOUT 5U   // how many x
+#define ACK_TIMEOUT             1000 // ms
+#define LORA_POWER              4    // 2-17 or 20. starting power for nodes
+#define WEAK_RSSI               -60.0 // test value. nodes whose signals are below this may be asked to increase transmission power
 // the following settings must match on the sender and receiver
 #define USING_CRC false
 #define CHIRPBW   125000UL
@@ -120,9 +121,9 @@ const long LoRaChannelsEU[] = {
 };
 
 // THRESHOLDING CONFIGURATION
-
+#define NUM_THRESHES 15
 // linspace(0, (2*9.81)^2, 16)
-const double thresholdZ[15] = {
+const double thresholdZ[NUM_THRESHES] = {
     25.66,
     51.32,
     76.98,
@@ -139,7 +140,7 @@ const double thresholdZ[15] = {
     359.28,
     384.94,
 };
-const double thresholdZ_logarithmic[15] = {
+const double thresholdZ_logarithmic[NUM_THRESHES] = {
     1.4507,
     2.1046,
     3.0532,
