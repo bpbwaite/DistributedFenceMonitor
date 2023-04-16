@@ -1,10 +1,10 @@
 /*
   FILE: DFM_MKR1310.CPP
-  VERSION: 0.9.0
-  DATE: 7 April 2023
+  VERSION: 1.0.0
+  DATE: 16 April 2023
   PROJECT: Distributed Fence Monitor Capstone
   AUTHORS: Briellyn Braithwaite, Jack Ramsay, Renzo Mena, Mike Paff
-  DESCRIPTION: Preliminary test code for MKR1310
+  DESCRIPTION: MKR1310 Node Code
 */
 #include "dfm_mkr1310.h"
 #include "dfm_errors.h"
@@ -13,18 +13,17 @@
 #if defined(ARDUINO_SAMD_MKRWAN1310) && !defined(CENTRAL_NODE)
 
 #include <Arduino.h>
-#include <time.h>
-
-#include <ArduinoECCX08.h>
+// do not sort includes!
+// clang-format off
+#include <Wire.h>
+#include <SPI.h>
+#include <RTCZero.h>
 #include <ArduinoLowPower.h>
 #include <Arduino_PMIC.h>
 #include <LoRa.h>
-#include <RTCZero.h>
-// #include <WDTZero.h>
-#include <DHT.h>
-#include <SPI.h>
 #include <SparkFun_ADXL345.h>
-#include <Wire.h>
+#include <DHT.h>
+// clang-format on
 
 // only defines unique to nodes that vary from board to board
 
@@ -51,7 +50,7 @@ volatile int ackFlag = 0; // bytes received in acknowledgement
 int DC_offset = 0;
 double Z_Power_Samples[ADXL_SAMPLE_LENGTH];
 int severityLevel = 0;
-double FIR[FIRSIZE];
+double LPF_FIR[FIRSIZE];
 
 // isr related items
 volatile bool motionDetected = false;
@@ -206,10 +205,13 @@ void setup_mkr1310() {
         timeStamp();
         Serial.println(F("Temperature Sensor Detected"));
     }
+    else {
+        timeStamp();
+        Serial.println(F("No Temperature Sensor"));
+    }
 
     // Calculate & Print FIR
-    CalculatePrintFIR(FIR);
-    Serial.println();
+    populateFIR(LPF_FIR);
 
     // CALIBRATE GRAVITATIONAL BIAS
     DC_offset = getDCOffset(adxl, CALIBRATION_TIME_SLICE);
@@ -252,22 +254,18 @@ void loop_mkr1310() {
     if (motionDetected) {
 
         timeStamp();
-        Serial.print(F("Wakeup was due to motion ("));
-        Serial.println();
+        Serial.println(F("Awake due to motion"));
 
         // collection logic variables
         int x, y, z;
-        adxl->readAccel(&x, &y, &z);
-        Serial.print("Z=");
-        Serial.print(z);
-        Serial.print("/");
-        Serial.print(DC_offset);
-        Serial.println(")");
+
         motionDetected = false;
         // Data Collection mode
         detachInterrupt(digitalPinToInterrupt(PIN_INTERRUPT));
         need_reattach = true;
+
         //***************DATA COLLECTION LOOP*****************//
+
         while (++attackCounter <= MAXIMUM_SCANS) {
             // collect data:
             int i = 0;
@@ -304,11 +302,21 @@ void loop_mkr1310() {
         //***************END DATA COLLECTION LOOP*****************//
 
         timeStamp();
-        severityLevel = CalculatePrintSeverity(severityLevel, Z_Power_Samples, FIR);
+        severityLevel = getFilteredSeverity(severityLevel, Z_Power_Samples, LPF_FIR);
         Serial.print("Peak severity of ");
         Serial.print(severityLevel);
         Serial.println(". Exit.");
     }
+
+    // Immediately reprepare to detect motion
+    adxlMode(adxl, ADXL_MOTION);
+
+    if (need_reattach) {
+        LowPower.attachInterruptWakeup(digitalPinToInterrupt(PIN_INTERRUPT), wakeuphandler, RISING);
+        need_reattach = false;
+    }
+    adxl->getInterruptSource();
+    motionDetected = false; // attaching an interrupt may cause it to run. unset it here.
 
     errorOn();
     // get basic status indicators
@@ -343,7 +351,7 @@ void loop_mkr1310() {
 
     // WAIT UNTIL TIME TO SEND IS UPON US
 
-    if (rtc.getEpoch() >= next_wake_epoch + 1) { // triggers if long collection
+    if (rtc.getEpoch() >= next_wake_epoch + 1) { // triggers if had a long collection
         // find out when to set my alarm for
         next_wake_epoch = rtc.getEpoch() + (SLEEP_TIME_MS / 1000);
         while (next_wake_epoch % (SLEEP_TIME_MS / 1000) != 0)
@@ -376,7 +384,7 @@ void loop_mkr1310() {
     errorOff();
 
     // get acknowledgement from central node
-
+    // todo: don't do this every time, propagate through network
     LoRa.receive();
 
     TOLA = millis();
@@ -408,42 +416,40 @@ void loop_mkr1310() {
         timeStamp();
         Serial.println(F("Subclock MS Value Set"));
     }
-    // reset receiver flag and sleep
+    else {
+        timeStamp();
+        Serial.println(F("No response from central"));
+    }
+    // reset receiver flag and sleep transmitter
     ackFlag = 0;
     LoRa.sleep();
 
-    // check if we should recompute the DC offset
-    if (TSLC() > ADXL_CALIBRATION_INTERVAL) {
-        DC_offset     = getDCOffset(adxl, CALIBRATION_TIME_SLICE);
-        need_reattach = true; // after the offset you need this
-        TOLC          = millis();
+    if (!motionDetected) { // no motion during sending phase, safe to sleep or perform calibration
+
+        // check if we should recompute the DC offset
+        if (TSLC() > ADXL_CALIBRATION_INTERVAL) {
+            DC_offset     = getDCOffset(adxl, CALIBRATION_TIME_SLICE);
+            need_reattach = true; // after the offset you need this
+            TOLC          = millis();
+        }
+
+        // find out when to set my alarm for
+        next_wake_epoch = rtc.getEpoch() + (SLEEP_TIME_MS / 1000);
+        while (next_wake_epoch % (SLEEP_TIME_MS / 1000) != 0)
+            next_wake_epoch--;
+
+        next_wake_epoch += MY_IDENTIFIER;
+
+        timeStamp();
+        Serial.print("Sleeping until ");
+        Serial.println(next_wake_epoch);
+
+        // real sleeping:
+        // LowPower.deepSleep(next_wake_epoch - rtc.getEpoch());
+        // simulated sleeping:
+        while (!digitalRead(PIN_INTERRUPT) && rtc.getEpoch() < next_wake_epoch)
+            ;
     }
-
-    adxlMode(adxl, ADXL_MOTION);
-
-    if (need_reattach) {
-        LowPower.attachInterruptWakeup(digitalPinToInterrupt(PIN_INTERRUPT), wakeuphandler, RISING);
-        need_reattach = false;
-    }
-
-    adxl->getInterruptSource();
-    motionDetected = false; // attaching an interrupt may cause it to run. unset it here.
-
-    // find out when to set my alarm for
-    next_wake_epoch = rtc.getEpoch() + (SLEEP_TIME_MS / 1000);
-    while (next_wake_epoch % (SLEEP_TIME_MS / 1000) != 0)
-        next_wake_epoch--;
-
-    next_wake_epoch += MY_IDENTIFIER;
-
-    timeStamp();
-    Serial.print("Sleeping until ");
-    Serial.println(next_wake_epoch);
-
-    // LowPower.deepSleep(next_wake_epoch - rtc.getEpoch());
-    // simulated sleeping:
-    while (!digitalRead(PIN_INTERRUPT) && rtc.getEpoch() < next_wake_epoch)
-        ;
 }
 
 #endif
