@@ -17,7 +17,7 @@
 
 void timeStamp() {
     Serial.print(F("-> "));
-    Serial.print((millis() / 1000.0), 1);
+    Serial.print((millis() / 1000.0), 3);
     Serial.print(F(": "));
 }
 void indicateOn() {
@@ -199,7 +199,7 @@ int getDCOffset(ADXL345 *adxl, double t_increment) {
     int region_start; // used when looking at sections of data
     int region_end;   // used when looking at sections of data
 
-    double Fs = bwCodeToFs(adxl->get_bw_code()); // Frequency of the samples
+    double Fs = bwCodeToFs(ADXL_BW); // Frequency of the samples
 
     // error checking: avoid divide by zero on read error
     if (Fs <= 0.00 || t_increment <= 0.00)
@@ -263,7 +263,7 @@ int getDCOffset(ADXL345 *adxl, double t_increment) {
 }
 
 bool inactivityInDataEnd(double *zdata, double LastXSeconds, ADXL345 *adxl) {
-    double Fs              = bwCodeToFs(adxl->get_bw_code());
+    double Fs              = bwCodeToFs(ADXL_BW);
     int num_samples        = floor(LastXSeconds * Fs);
     double ZThresholdPower = sq((double) ADXL_ACT_THRESH * MPS2PI);
     for (int i = ADXL_SAMPLE_LENGTH - num_samples; i < ADXL_SAMPLE_LENGTH; ++i) {
@@ -276,12 +276,13 @@ bool inactivityInDataEnd(double *zdata, double LastXSeconds, ADXL345 *adxl) {
     }
     return true;
 }
-void CalculatePrintFIR(double FIR[]) {
+void populateFIR(double *FIR) {
+
+    const double omega_cutoff = (2.0 * PI * LPF_HZ);
 
     double t[FIRSIZE];
-    double Fs = bwCodeToFs(ADXL_BW); // TODO everywhere else, instead of getting from adxl, use the predefined constant
-    double omega_cutoff = (2.0 * PI * LPF_HZ);
-    double acc          = 0;
+    double Fs  = bwCodeToFs(ADXL_BW);
+    double acc = 0;
     for (int k = 0; k < FIRSIZE; ++k) {
         t[k]   = k / Fs;
         FIR[k] = exp(-1.0 * omega_cutoff * t[k]);
@@ -294,18 +295,19 @@ void CalculatePrintFIR(double FIR[]) {
         Serial.print(FIR[k], 4);
         Serial.print(',');
     }
+    Serial.println();
 }
 
-int CalculatePrintSeverity(int severityLevel, double Z_Power_Samples[], double FIR[]) {
-    Serial.println("Original Data: ");
-    for (int n = 0; n < ADXL_SAMPLE_LENGTH; ++n) {
-        Serial.print(Z_Power_Samples[n], 5);
-        Serial.print(',');
-    }
+int getFilteredSeverity(int severityLevel, double *Z_Power_Samples, double *FIR) {
+    // Serial.println("Original Data: ");
+    // for (int n = 0; n < ADXL_SAMPLE_LENGTH; ++n) {
+    //     Serial.print(Z_Power_Samples[n], 5);
+    //     Serial.print(',');
+    // }
     double data_maximum   = 0;
     int periodic_severity = 0;
-    Serial.println();
-    Serial.println("Filtered Data: ");
+    // Serial.println();
+    // Serial.println("Filtered Data: ");
     int L = ADXL_SAMPLE_LENGTH + FIRSIZE - 1;
     for (int n = 0; n < L; ++n) {
         double Y = 0;
@@ -314,8 +316,8 @@ int CalculatePrintSeverity(int severityLevel, double Z_Power_Samples[], double F
                 Y += Z_Power_Samples[k] * FIR[n - k];
             }
         }
-        Serial.print(Y, 5);
-        Serial.print(", ");
+        // Serial.print(Y, 5);
+        // Serial.print(", ");
         if (Y > data_maximum) {
             // this will be checking for the current max energy
             data_maximum = Y;
@@ -323,7 +325,7 @@ int CalculatePrintSeverity(int severityLevel, double Z_Power_Samples[], double F
     }
 
     //  following for-loop should loop until thresholdZ is no longer passed
-    for (int i = 0; i < 15; ++i) {
+    for (int i = 0; i < NUM_THRESHES; ++i) {
         if (data_maximum < thresholdZ_logarithmic[i])
             break;
         periodic_severity++;
@@ -465,110 +467,5 @@ void epchtostr(char *p, uint32_t epc) {
     ts         = *localtime(&now);
     strftime(p, 22, "%m-%d-%Y %H:%M:%S", &ts);
 }
-
-// void mndtostr(Serial_ &s, const MonitoringNodeData d) {
-//     static char p[322];
-//
-//     char channelStr[20];
-//     int k;
-//     if ((d.freq >= LoRaChannelsUS[0]) && (d.freq <= LoRaChannelsUS[NUMCHANNELS_US - 1])) {
-//         for (k = 0; k < NUMCHANNELS_US; ++k)
-//             if (LoRaChannelsUS[k] == (long) d.freq)
-//                 break;
-//         sprintf(channelStr, "America Ch. %d", k);
-//     }
-//     else if ((d.freq >= LoRaChannelsEU[0]) && (d.freq <= LoRaChannelsEU[NUMCHANNELS_EU - 1])) {
-//         int k;
-//         for (k = 0; k < NUMCHANNELS_EU; ++k)
-//             if (LoRaChannelsEU[k] == (long) d.freq)
-//                 break;
-//         sprintf(channelStr, "Europe Ch. %d", k);
-//     }
-//     else
-//         strcpy(channelStr, "Unknown");
-//
-//     char syncWordGoodStr[4];
-//     if (d.SyncWord == SYNCWORD)
-//         strcpy(syncWordGoodStr, "OK");
-//     else
-//         strcpy(syncWordGoodStr, "ERR");
-//
-//     char epochStr[22];
-//     epchtostr(epochStr, d.epoch);
-//
-//     char confStr[10];
-//     sprintf(confStr, "SF%dBW%d", SPREADFACTOR, int(CHIRPBW / 1000U));
-//
-//     // snr relative strength is SF dependent
-//     float snr = LoRa.packetSnr();
-//
-//     PGM_P format = ">ID: 0x%02X\r\n"
-//                    ">Pack: %d\r\n"
-//                    ">Stat: 0x%02X\r\n"
-//                    ">Cons: %d\r\n"
-//                    ">Batt: %d\r\n"
-//                    ">Freq: %.1fMHz (%s)\r\n"
-//                    ">SW: 0x%04X (%s)\r\n"
-//                    ">Uptime: %ds\r\n"
-//                    ">TOA: %dms\r\n"
-//                    ">Temp: %.1fC\r\n"
-//                    ">AccX: %.2fg\r\n"
-//                    ">AccY: %.2fg\r\n"
-//                    ">AccZ: %.2fg\r\n"
-//                    ">Epoch: %s\r\n"
-//                    ">Conf: %s\r\n"
-//                    ">RSSI: %ddBmW\r\n"
-//                    ">SNR: %.1fdB\r\n";
-//
-//     // use to determine the max format buffer size required, then comment out.
-//     // remember to leave one for null char
-//     // PGM_P formatmax = ">ID: 0xAA\r\n"
-//     //                   ">Pack: 1000000000\r\n"
-//     //                   ">Stat: 0xAA\r\n"
-//     //                   ">Cons: 1000000000\r\n"
-//     //                   ">Batt: 1000000000\r\n"
-//     //                   ">Freq: 999.1fMHz (America Ch. 64)\r\n"
-//     //                   ">SW: 0xAAAA (ERR)\r\n"
-//     //                   ">Uptime: 1000000000s\r\n"
-//     //                   ">TOA: 1000000000ms\r\n"
-//     //                   ">Temp: 254.12C\r\n"
-//     //                   ">AccX: -15.25g\r\n"
-//     //                   ">AccY: -15.25g\r\n"
-//     //                   ">AccZ: -15.25g\r\n"
-//     //                   ">Epoch: 12-31-2000 24:59:59\r\n"
-//     //                   ">Conf: SF12BW500\r\n"
-//     //                   ">RSSI: -120dBmW\r\n"
-//     //                   ">SNR: -20.0dB\r\n";
-//
-//     sprintf(p,
-//             format,
-//             d.ID,
-//             d.packetnum,
-//             d.status,
-//             d.connectedNodes,
-//             d.bat,
-//             d.freq / 1000000.0,
-//             channelStr,
-//             d.SyncWord,
-//             syncWordGoodStr,
-//             d.upTime / 1000,
-//             d.timeOnAir,
-//             d.temperature,
-//             0,
-//             0,
-//             0,
-//             epochStr,
-//             confStr,
-//             LoRa.packetRssi(),
-//             snr);
-//
-//     s.print(p);
-// }
-// void mndtomatlab(Serial_ &s, const MonitoringNodeData d, const ReceiverExtras e) {
-//     for (int nb = 0; nb < sizeof(MonitoringNodeData); ++nb)
-//         s.write((unsigned char) ((uint8_t *) &d)[nb]);
-//     for (int nb = 0; nb < sizeof(ReceiverExtras); ++nb)
-//         s.write((unsigned char) ((uint8_t *) &e)[nb]);
-// }
 
 #endif
