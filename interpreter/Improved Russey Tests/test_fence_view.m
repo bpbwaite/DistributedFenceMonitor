@@ -1,11 +1,11 @@
 %/*
 %  FILE: Better Fence Test Viewer
-%  VERSION: 1.0.0
+%  VERSION: 1.0.1
 %  TEST DATE: 9 March 2023
 %  DATE: 9 March 2023
 %  PROJECT: Distributed Fence Monitor Capstone
 %  AUTHORS: Briellyn Braithwaite
-%  DESCRIPTION:
+%  DESCRIPTION: Plot relation between distance, tx power, and rssi
 %*/
 
 %% Load Data

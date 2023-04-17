@@ -1,6 +1,6 @@
 %/*
 %  FILE: accel_threshFinder.m
-%  VERSION: 1.0.0
+%  VERSION: 1.0.1
 %  DATE: 16 March 2023
 %  PROJECT: Distributed Fence Monitor Capstone
 %  AUTHORS: Briellyn Braithwaite

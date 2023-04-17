@@ -1,5 +1,12 @@
-% header
-
+%/*
+%  FILE: chamber_test.m
+%  VERSION: 1.0.1
+%  TEST DATE: 12 April 2023
+%  DATE: 12 April 2023
+%  PROJECT: Distributed Fence Monitor Capstone
+%  AUTHORS: Briellyn Braithwaite, Zachary Couch
+%  DESCRIPTION: Plots data collected at thermal chamber
+%*/
 %% Information
 
 % Agilent E3647A Power supply

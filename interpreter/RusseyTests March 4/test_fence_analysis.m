@@ -5,7 +5,7 @@
 %  DATE: 5 March 2023
 %  PROJECT: Distributed Fence Monitor Capstone
 %  AUTHORS: Briellyn Braithwaite
-%  DESCRIPTION:
+%  DESCRIPTION: Superceded by Improved RSSI tests
 %*/
 %% Load Data
 clearvars

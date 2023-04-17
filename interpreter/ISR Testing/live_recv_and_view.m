@@ -1,10 +1,10 @@
 %/*
 %  FILE: Live Viewer for accelerometer
-%  VERSION: 1.0.0
+%  VERSION: 1.0.1
 %  DATE: 15 March 2023
 %  PROJECT: Distributed Fence Monitor Capstone
 %  AUTHORS: Briellyn Braithwaite
-%  DESCRIPTION:
+%  DESCRIPTION: Streams 3-axis accelerometer data over serial
 %*/
 
 %% Setup

@@ -5,7 +5,7 @@
 %  DATE: 4 March 2023
 %  PROJECT: Distributed Fence Monitor Capstone
 %  AUTHORS: Briellyn Braithwaite
-%  DESCRIPTION:
+%  DESCRIPTION: Plot RSSI and SNR data at varying distances
 %*/
 
 %% Load Data

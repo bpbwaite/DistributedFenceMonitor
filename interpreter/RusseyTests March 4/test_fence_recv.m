@@ -1,10 +1,11 @@
 %/*
-%  FILE:
-%  VERSION: 0.0.1
+%  FILE: test_fence_recv.m
+%  VERSION: 0.0.2
 %  DATE: 
 %  PROJECT: Distributed Fence Monitor Capstone
 %  AUTHORS: Briellyn Braithwaite
-%  DESCRIPTION: 
+%  DESCRIPTION: Serial Ingest program for tence_fence_view.m and
+%  test_fence_analysis.m
 %*/
 
 %% Setup

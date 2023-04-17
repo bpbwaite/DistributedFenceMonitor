@@ -5,7 +5,7 @@
 %  DATE: 4 March 2023
 %  PROJECT: Distributed Fence Monitor Capstone
 %  AUTHORS: Briellyn Braithwaite
-%  DESCRIPTION:
+%  DESCRIPTION: Serial Ingest program for all accel_*.m files
 %*/
 
 %% Setup

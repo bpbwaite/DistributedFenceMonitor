@@ -1,11 +1,11 @@
 %/*
 %  FILE: responseTimeTest.m
-%  VERSION: 1.0.0
+%  VERSION: 1.0.1
 %  TEST DATE: 7 March 2023
 %  DATE: 7 March 2023
 %  PROJECT: Distributed Fence Monitor Capstone
 %  AUTHORS: Briellyn Braithwaite
-%  DESCRIPTION:
+%  DESCRIPTION: Empirical test proving that MKR wakeup is fast enough
 %*/
 
 %% Load Data

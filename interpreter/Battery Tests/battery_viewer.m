@@ -1,11 +1,11 @@
 %/*
 %  FILE: battery_viewer.m
-%  VERSION: 1.0.5
+%  VERSION: 1.0.6
 %  TEST DATE: 10 March 2023
 %  DATE: 22 March 2023
 %  PROJECT: Distributed Fence Monitor Capstone
 %  AUTHORS: Briellyn Braithwaite
-%  DESCRIPTION: 
+%  DESCRIPTION: Graph the discharge curve of a LiPo battery
 %*/
 % TESTS: 
 % Confounds: extra time to write to SD card, ADC power

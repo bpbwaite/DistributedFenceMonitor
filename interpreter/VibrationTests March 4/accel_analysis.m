@@ -1,11 +1,11 @@
 %/*
 %  FILE: accel_analysis.m
-%  VERSION: 1.0.1
+%  VERSION: 1.0.2
 %  TEST DATE: 4 March 2023
 %  DATE: 6 March 2023
 %  PROJECT: Distributed Fence Monitor Capstone
 %  AUTHORS: Briellyn Braithwaite
-%  DESCRIPTION:
+%  DESCRIPTION: Debiases and plot acceleration in power domain
 %*/
 
 %% Load Data

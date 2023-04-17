@@ -1,11 +1,11 @@
 %/*
 %  FILE: accel_view.m
-%  VERSION: 1.0.0
+%  VERSION: 1.0.1
 %  TEST DATE: 4 March 2023
 %  DATE: 4 March 2023
 %  PROJECT: Distributed Fence Monitor Capstone
 %  AUTHORS: Briellyn Braithwaite
-%  DESCRIPTION:
+%  DESCRIPTION: Simple accelerometer data plotting
 %*/
 %% Load Data
 

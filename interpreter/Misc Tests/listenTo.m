@@ -1,13 +1,12 @@
 function [] = listenTo(bits, sf, sw, crc, plen, symtime)
 %/*
 %  FILE: listenTo.m
-%  VERSION: 1.0.0
+%  VERSION: 1.0.1
 %  DATE: 23 February 2023
 %  PROJECT: Distributed Fence Monitor Capstone
 %  AUTHORS: Briellyn Braithwaite
 %  REQUIREMENTS: Communications Toolbox
-%  DESCRIPTION: 
-%  EXAMPLE: 
+%  DESCRIPTION: Interpret a LoRa packet as sound
 %*/
 %% Full Error Handling
 if nargin < 1
