@@ -294,22 +294,20 @@ void populateFIR(double *FIR) {
     for (int k = 0; k < FIRSIZE; ++k) {
         FIR[k] /= acc;
         Serial.print(FIR[k], 4);
-        Serial.print(',');
+        Serial.print(k != (FIRSIZE - 1) ? ',' : ' ');
     }
     Serial.println();
 }
 
 int getFilteredSeverity(int severityLevel, double *Z_Power_Samples, double *FIR) {
-    // Serial.println("Original Data: ");
-    // for (int n = 0; n < ADXL_SAMPLE_LENGTH; ++n) {
-    //     Serial.print(Z_Power_Samples[n], 5);
-    //     Serial.print(',');
-    // }
+    // if the severity level passed in is greater than the one calculated,
+    // we return that instead
+
+    const int L           = ADXL_SAMPLE_LENGTH + FIRSIZE - 1;
     double data_maximum   = 0;
     int periodic_severity = 0;
-    // Serial.println();
-    // Serial.println("Filtered Data: ");
-    int L = ADXL_SAMPLE_LENGTH + FIRSIZE - 1;
+
+    // run data through LPF:
     for (int n = 0; n < L; ++n) {
         double Y = 0;
         for (int k = 0; k <= n; ++k) {
@@ -317,8 +315,6 @@ int getFilteredSeverity(int severityLevel, double *Z_Power_Samples, double *FIR)
                 Y += Z_Power_Samples[k] * FIR[n - k];
             }
         }
-        // Serial.print(Y, 5);
-        // Serial.print(", ");
         if (Y > data_maximum) {
             // this will be checking for the current max energy
             data_maximum = Y;
