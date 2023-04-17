@@ -17,15 +17,13 @@ clearvars
 close all
 format longg
 
-figure,
-
 %% Between units
 trial = 1:4;
 u1 = [7 5 6 10];
 u2 = [3 4 5 3];
 
 % Build the fence
-subplot(2,2,1), hold on
+figure, hold on
 xlim([-3.5 3.5])
 xticks(sort([-3.5:1:3.5]))
 ylim([0 2])
@@ -46,13 +44,19 @@ xticklabels([])
 yticklabels([])
 title('Intruder Climbs Between Nodes')
 
+id = 1;
+for n=-3:3
+    text(n, 0.2, num2str(id), 'HorizontalAlignment', 'center')
+    id = id + 1;
+end
+xlabel('Fence Panel')
 %% On top of unit
 trial = 1:3;
 u1 = [15 15 15];
 u2 = [0 0 0];
 
 % Build the fence
-subplot(2,2,2), hold on
+figure, hold on
 xlim([-3.5 3.5])
 xticks(sort([-3.5:1:3.5]))
 ylim([0 2])
@@ -73,13 +77,19 @@ xticklabels([])
 yticklabels([])
 title('Intruder Climbs Directly on Node')
 
+id = 1;
+for n=-3:3
+    text(n, 0.2, num2str(id), 'HorizontalAlignment', 'center')
+    id = id + 1;
+end
+xlabel('Fence Panel')
 %% One-away from 1, between
 trial = 1:3;
 u1 = [7 11 12];
 u2 = [0 3 2];
 
 % Build the fence
-subplot(2,2,3), hold on
+figure, hold on
 xlim([-3.5 3.5])
 xticks(sort([-3.5:1:3.5]))
 ylim([0 2])
@@ -100,13 +110,19 @@ xticklabels([])
 yticklabels([])
 title('Intruder Climbs Closer to Node 1')
 
+id = 1;
+for n=-3:3
+    text(n, 0.2, num2str(id), 'HorizontalAlignment', 'center')
+    id = id + 1;
+end
+xlabel('Fence Panel')
 %% One-away from 2, between
 trial = 1:3;
 u1 = [3 6 0];
 u2 = [4 5 9];
 
 % Build the fence
-subplot(2,2,4), hold on
+figure, hold on
 xlim([-3.5 3.5])
 xticks(sort([-3.5:1:3.5]))
 ylim([0 2])
@@ -126,3 +142,10 @@ text(2, 1.5, ["Severity" string(u2)], 'HorizontalAlignment', 'center')
 xticklabels([])
 yticklabels([])
 title('Intruder Climbs Closer to Node 2')
+
+id = 1;
+for n=-3:3
+    text(n, 0.2, num2str(id), 'HorizontalAlignment', 'center')
+    id = id + 1;
+end
+xlabel('Fence Panel')
