@@ -1,6 +1,6 @@
 %/*
 %  FILE: severity_analysis.m
-%  VERSION: 1.0.0
+%  VERSION: 1.0.1
 %  TEST DATE: 14 April 2023
 %  DATE: 15 April 2023
 %  PROJECT: Distributed Fence Monitor Capstone
@@ -11,6 +11,7 @@
 
 % Data from a variety of people and methods, including sneaky and
 % on-the-pole
+% Zapata did not like this
 %%
 clearvars
 close all
@@ -34,16 +35,16 @@ grid on
 plot([-2 2], [1 1], 'bo', 'linewidth', 8)
 text(-2, 0.9, 'Node 1', 'HorizontalAlignment', 'center')
 text(2, 0.9, 'Node 2', 'HorizontalAlignment', 'center')
-% place the attacker
+% place the Intruder
 plot(0, 0.7, 'ro', 'linewidth', 10)
-text(0, 0.6, 'Attacker', 'HorizontalAlignment', 'center')
+text(0, 0.6, 'Intruder', 'HorizontalAlignment', 'center')
 % place data
 text(-2, 1.5, ["Severity" string(u1)], 'HorizontalAlignment', 'center')
 text(2, 1.5, ["Severity" string(u2)], 'HorizontalAlignment', 'center')
 % formatting
 xticklabels([])
 yticklabels([])
-title('Attacker Climbs Between Nodes')
+title('Intruder Climbs Between Nodes')
 
 %% On top of unit
 trial = 1:3;
@@ -61,16 +62,16 @@ grid on
 plot([-2 2], [1 1], 'bo', 'linewidth', 8)
 text(-2, 0.9, 'Node 1', 'HorizontalAlignment', 'center')
 text(2, 0.9, 'Node 2', 'HorizontalAlignment', 'center')
-% place the attacker
+% place the Intruder
 plot(-2, 0.7, 'ro', 'linewidth', 10)
-text(-2, 0.6, 'Attacker', 'HorizontalAlignment', 'center')
+text(-2, 0.6, 'Intruder', 'HorizontalAlignment', 'center')
 % place data
 text(-2, 1.5, ["Severity" string(u1)], 'HorizontalAlignment', 'center')
 text(2, 1.5, ["Severity" string(u2)], 'HorizontalAlignment', 'center')
 % formatting
 xticklabels([])
 yticklabels([])
-title('Attacker Climbs Directly on Node')
+title('Intruder Climbs Directly on Node')
 
 %% One-away from 1, between
 trial = 1:3;
@@ -88,16 +89,16 @@ grid on
 plot([-2 2], [1 1], 'bo', 'linewidth', 8)
 text(-2, 0.9, 'Node 1', 'HorizontalAlignment', 'center')
 text(2, 0.9, 'Node 2', 'HorizontalAlignment', 'center')
-% place the attacker
+% place the Intruder
 plot(-1, 0.7, 'ro', 'linewidth', 10)
-text(-1, 0.6, 'Attacker', 'HorizontalAlignment', 'center')
+text(-1, 0.6, 'Intruder', 'HorizontalAlignment', 'center')
 % place data
 text(-2, 1.5, ["Severity" string(u1)], 'HorizontalAlignment', 'center')
 text(2, 1.5, ["Severity" string(u2)], 'HorizontalAlignment', 'center')
 % formatting
 xticklabels([])
 yticklabels([])
-title('Attacker Climbs Closer to Node 1')
+title('Intruder Climbs Closer to Node 1')
 
 %% One-away from 2, between
 trial = 1:3;
@@ -115,13 +116,13 @@ grid on
 plot([-2 2], [1 1], 'bo', 'linewidth', 8)
 text(-2, 0.9, 'Node 1', 'HorizontalAlignment', 'center')
 text(2, 0.9, 'Node 2', 'HorizontalAlignment', 'center')
-% place the attacker
+% place the Intruder
 plot(1, 0.7, 'ro', 'linewidth', 10)
-text(1, 0.6, 'Attacker', 'HorizontalAlignment', 'center')
+text(1, 0.6, 'Intruder', 'HorizontalAlignment', 'center')
 % place data
 text(-2, 1.5, ["Severity" string(u1)], 'HorizontalAlignment', 'center')
 text(2, 1.5, ["Severity" string(u2)], 'HorizontalAlignment', 'center')
 % formatting
 xticklabels([])
 yticklabels([])
-title('Attacker Climbs Closer to Node 2')
+title('Intruder Climbs Closer to Node 2')
