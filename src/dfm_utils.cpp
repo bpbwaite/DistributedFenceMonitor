@@ -17,7 +17,7 @@
 
 void timeStamp() {
     Serial.print(F("-> "));
-    Serial.print((millis() / 1000.0), 3);
+    Serial.print((millis() / 1000.0), 1);
     Serial.print(F(": "));
 }
 void indicateOn() {
@@ -289,7 +289,8 @@ void populateFIR(double *FIR) {
         acc += FIR[k];
     }
 
-    Serial.print("FIR Values: ");
+    timeStamp();
+    Serial.print(F("FIR Values: "));
     for (int k = 0; k < FIRSIZE; ++k) {
         FIR[k] /= acc;
         Serial.print(FIR[k], 4);
