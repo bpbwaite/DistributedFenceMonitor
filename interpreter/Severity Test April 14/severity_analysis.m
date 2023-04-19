@@ -11,7 +11,7 @@
 
 % Data from a variety of people and methods, including sneaky and
 % on-the-pole
-% Zapata did not like this
+
 %%
 clearvars
 close all
@@ -19,8 +19,8 @@ format longg
 
 %% Between units
 trial = 1:4;
-u1 = [7 5 6 10];
-u2 = [3 4 5 3];
+u1 = [7 5 6];
+u2 = [3 4 5];
 
 % Build the fence
 figure, hold on
