@@ -171,7 +171,7 @@ int getDCOffset(ADXL345 *adxl, double t_increment) {
                             // DATA COLLECTION SECTION
 
     timeStamp();
-    Serial.print(F("Calibrating quiescent bias. Data: "));
+    Serial.print(F("Calibrating quiescent bias..."));
 
     detachInterrupt(digitalPinToInterrupt(PIN_INTERRUPT));
 
@@ -190,6 +190,7 @@ int getDCOffset(ADXL345 *adxl, double t_increment) {
         while (!digitalRead(PIN_INTERRUPT) && (millis() - tols < ADXL_SAMPLE_TIMEOUT))
             // wait for the pin to go high and take sample
             ;
+        // todo: some action on watchdog (tols) timeout
         i++;
     }
 
