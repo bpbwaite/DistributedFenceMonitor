@@ -139,8 +139,9 @@ void setup_mkr1310() {
     }
     if (adxlAttempts > ADXL_CONNECTION_TIMEOUT) {
         Serial.println(F("Error: ADXL Appears Offline"));
-        while (1)
-            ERROR_OUT(ERROR_ADXL345);
+        // while (1)
+        //     ERROR_OUT(ERROR_ADXL345);
+        //  todo: more gracefully handle (ex. don't run calibration)
     }
     adxlMode(adxl, ADXL_MOTION);
 
@@ -370,7 +371,11 @@ void loop_mkr1310() {
     timeStamp();
     Serial.print(F("Sending Data: 0x"));
     for (int k = 0; k < sizeof(MND_Compact); ++k) {
-        Serial.print(((uint8_t *) &mnd)[k], 16);
+        uint8_t b = ((uint8_t *) &mnd)[k];
+
+        if (b <= 0xF)
+            Serial.print("0");
+        Serial.print(b, 16);
     }
     Serial.println();
 
