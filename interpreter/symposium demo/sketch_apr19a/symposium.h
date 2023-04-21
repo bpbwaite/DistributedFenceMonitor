@@ -5,7 +5,7 @@
 #define ADXL_DC_CAPTURE 300
 #define ADXL_SAMPLE_TIMEOUT     50UL // ms
 #define CALIBRATION_TIME_SLICE    0.50     // seconds
-#define ADXL_CALIBRATION_INTERVAL 3000 // ms
+#define ADXL_CALIBRATION_INTERVAL 30000 // ms
 #define FIRSIZE 16
 #define LPF_HZ  8
 #define ADXL_FALLING    1
@@ -81,8 +81,6 @@ int getDCOffset(ADXL345 *adxl, double t_increment) {
 
     unsigned long tols = 0; // local implementation of TOLS
                             // DATA COLLECTION SECTION
-
-    Serial.print(F("Calibrating quiescent bias..."));
 
     detachInterrupt(digitalPinToInterrupt(PIN_INTERRUPT));
 

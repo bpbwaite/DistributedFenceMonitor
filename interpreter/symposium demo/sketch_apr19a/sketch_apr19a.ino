@@ -71,7 +71,8 @@ void loop() {
 
   if (digitalRead(PIN_INTERRUPT)) {
             
-            adxl->readAccel(&ad.x, &ad.y, &ad.z - DC_offset);
+            adxl->readAccel(&ad.x, &ad.y, &ad.z);
+            ad.z -= DC_offset;
             accel_to_mat(Serial, ad);
             Serial.println();
         }
