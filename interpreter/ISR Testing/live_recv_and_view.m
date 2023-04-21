@@ -65,7 +65,7 @@ set(h2, 'XData', t)
 set(h3, 'XData', t)
 
 % show thresholds
-th_ms2 = sqrt(4.4294);
+th_ms2 = (0x7 * 62.5/1000.0 * 9.81);
 plot([t(1) t(end)], [th_ms2 th_ms2], 'k--')
 plot([t(1) t(end)], [-th_ms2 -th_ms2], 'k--')
 
