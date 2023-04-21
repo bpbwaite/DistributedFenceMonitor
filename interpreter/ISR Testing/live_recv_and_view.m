@@ -41,17 +41,13 @@ n = 1;
 t_window = 5; % seconds of data to show
 keepback = t_window * Fs;
 
-databuf.x = zeros(1, keepback);
-databuf.y = zeros(1, keepback);
-databuf.z = zeros(1, keepback);
-
 figure(1), hold on
 grid on
 shg
 xlabel('Time (sec)')
 ylabel('Acceration (m/s^2)')
-h1 = plot(0, 0, 'r', 'linewidth', 2);
-h2 = plot(0, 0, 'g', 'linewidth', 2);
+%h1 = plot(0, 0, 'r', 'linewidth', 2);
+%h2 = plot(0, 0, 'g', 'linewidth', 2);
 h3 = plot(0, 0, 'b', 'linewidth', 2);
 ylim([-20 20])
 
@@ -60,21 +56,25 @@ xupper = t_window + 0.5;
 xlim([xlower, xupper])
 t = 0:1 / Fs:t_window;
 t = t(1:end - 1);
-set(h1, 'XData', t)
-set(h2, 'XData', t)
+%set(h1, 'XData', t)
+%set(h2, 'XData', t)
 set(h3, 'XData', t)
 
 % show thresholds
-th_ms2 = (0x7 * 62.5/1000.0 * 9.81);
+th_ms2 = (7.0 * 62.5/1000.0 * 9.81);
 plot([t(1) t(end)], [th_ms2 th_ms2], 'k--')
 plot([t(1) t(end)], [-th_ms2 -th_ms2], 'k--')
 
 legend('X Accel', 'Y Accel', 'Z Accel', '', '')
 
+databuf.x = zeros(1, keepback);
+databuf.y = zeros(1, keepback);
+databuf.z = zeros(1, keepback);
+
 configureCallback(s, "terminator", @handleSerialData)
 %%
 figure(1)
-fps = 24;
+fps = 20;
 fperinday = (1 / fps) / 60/60/24;
 
 while 1
@@ -82,12 +82,16 @@ while 1
 
     while now - completed_last < fperinday
     end
-
-    set(h1, 'YData', databuf.x * g / lsb_per_g_xy);
-    set(h2, 'YData', databuf.y * g / lsb_per_g_xy);
+try
+    %set(h1, 'YData', databuf.x * g / lsb_per_g_xy);
+    %set(h2, 'YData', databuf.y * g / lsb_per_g_xy);
     set(h3, 'YData', databuf.z * g / lsb_per_g_z);
 
     drawnow
+    
+catch
+   % do nothing on fail 
+end
 
 end
 
