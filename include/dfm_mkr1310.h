@@ -18,9 +18,9 @@
 #define SERIALTIMEOUT 10000
 
 // TIMING CONFIGURATION
-#define SLEEP_TIME_MS           5000 // recommend that these be whole seconds
+#define SLEEP_TIME_MS           3000 // recommend that these be whole seconds
 #define GMTOFFSET               -25200
-#define ADXL_SAMPLE_LENGTH      500  // The number of accelerometer readings to hold
+#define ADXL_SAMPLE_LENGTH      250  // The number of accelerometer readings to hold
 #define ADXL_DC_CAPTURE         300  // Samples to take when running DC calibration
 #define ADXL_SAMPLE_TIMEOUT     50UL // ms
 #define ADXL_CONNECTION_TIMEOUT 5U   // how many x

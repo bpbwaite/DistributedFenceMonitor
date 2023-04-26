@@ -5,7 +5,7 @@
 #define ADXL_DC_CAPTURE 300
 #define ADXL_SAMPLE_TIMEOUT     50UL // ms
 #define CALIBRATION_TIME_SLICE    0.50     // seconds
-#define ADXL_CALIBRATION_INTERVAL 30000 // ms
+#define ADXL_CALIBRATION_INTERVAL 300000 // ms
 #define FIRSIZE 16
 #define LPF_HZ  8
 #define ADXL_FALLING    1

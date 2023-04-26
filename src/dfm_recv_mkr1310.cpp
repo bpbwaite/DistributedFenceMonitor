@@ -77,8 +77,8 @@ void setup_recv_mkr1310() {
 
     // Lora ACK packet parameters
     mnd_acknowledgement.universal_epoch = rtc.getEpoch();
-    mnd_acknowledgement.universal_millis =
-        millis(); // TODO define this value as the remainder of millis at which rtc ticks occur
+    // mnd_acknowledgement.universal_millis =
+    //     millis(); // TODO define this value as the remainder of millis at which rtc ticks occur
     mnd_acknowledgement.weak_signal_please_increase = false;
 
     // SPI.usingInterrupt(digitalPinToInterrupt(LORA_IRQ));

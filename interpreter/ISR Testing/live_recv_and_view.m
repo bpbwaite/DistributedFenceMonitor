@@ -45,13 +45,13 @@ severities = [
 sev_lsbs = sqrt(severities) / g * lsb_per_g_z;
 
 %% Connection
-spla = serialportlist';
-spla = spla(1);
+spla = "COM15";
 s = serialport(spla, 115200);
 s.Timeout = timeout;
 
 disp("Setup complete!")
 disp("Receiving")
+disp("(you can ignore the error below)")
 
 %% Ingest
 global databuf n keepback
@@ -75,6 +75,9 @@ if show_all_axes
     h2 = plot(0, 0, 'g', 'linewidth', 2);
 end
 h3 = plot(0, 0, 'b', 'linewidth', 2);
+
+h_pointer = plot([0 0], [-20 20], 'k--');
+
 ylim([-20 20])
 
 xlower = 0 - 0.1;
@@ -149,6 +152,8 @@ while 1
         
         
         txt.String = [num2str(sv) + " (" + num2str(svmax) + ")"];
+        t_pointer = mod(n, keepback)/Fs;
+        set(h_pointer, 'XData', [t_pointer t_pointer])
         drawnow
         
     catch

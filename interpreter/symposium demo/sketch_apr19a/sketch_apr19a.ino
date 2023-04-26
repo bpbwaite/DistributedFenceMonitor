@@ -9,6 +9,8 @@
 
 ADXL345 *adxl;
 
+int DC_offset = 0;
+
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(SERIALBAUD);
@@ -54,9 +56,11 @@ void setup() {
   adxl->setInterruptMapping(ADXL345_DATA_READY, ADXL345_INT1_PIN);
 
   adxlMode(adxl, ADXL_COLLECTION);
+  DC_offset     = getDCOffset(adxl, CALIBRATION_TIME_SLICE);
+  TOLC          = millis();
 }
 
-int DC_offset = 0;
+
 
 void loop() {
   // put your main code here, to run repeatedly:

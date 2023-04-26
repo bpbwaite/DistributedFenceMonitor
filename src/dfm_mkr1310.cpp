@@ -27,7 +27,7 @@
 
 // only defines unique to nodes that vary from board to board
 
-#define MY_IDENTIFIER 0x03 // 0-13; small scale build ID determines turn
+#define MY_IDENTIFIER 0x02 // 0-13; small scale build ID determines turn
 #define SET_RTC       true
 
 // global variables and objects
