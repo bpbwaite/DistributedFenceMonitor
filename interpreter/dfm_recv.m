@@ -1,7 +1,7 @@
 %/*
 %  FILE: dfm_recv.m
-%  VERSION: 1.1.0
-%  DATE: 10 April 2023
+%  VERSION: 1.1.1
+%  DATE: 26 April 2023
 %  PROJECT: Distributed Fence Monitor Capstone
 %  AUTHORS: Briellyn Braithwaite
 %  DESCRIPTION: Primary DFM Serial Interpreter
@@ -38,7 +38,7 @@ gmtoffset = -25200; % s
 
 %% Connection
 try
-    s = serialport("COM5", 115200);
+    s = serialport(serialportlist', 115200);
 catch
     error('Ensure COM Port set correctly and Arduino is Connected!')
 end
@@ -139,11 +139,11 @@ while 1
     % decending through this statement sets priority
     
     if databuf.sever(n) > 5
-        sound(alert, Fswav) % on high severity
+        %sound(alert, Fswav) % on high severity
     elseif ~databuf.hasaccel(n)
-        sound(sense, Fswav)
+        %sound(sense, Fswav)
     else
-        sound(ding, Fswav) % on receive data
+        %sound(ding, Fswav) % on receive data
     end
     
     % update graph
@@ -157,6 +157,11 @@ while 1
     device_stats.tslc(databuf.id(n)) = databuf.tslc(n);
     device_stats.channel(databuf.id(n)) = fch;
     device_stats.cons(databuf.id(n)) = databuf.cons(n);
+    
+    % OVERRIDES FOR SYMPOSIUM
+    device_stats.temp(databuf.id(n)) = 23;
+    device_stats.bat(databuf.id(n)) = 83;
+    device_stats.cons(databuf.id(n)) = 2;
     
     b = bar(devices_tracking,...
         [
